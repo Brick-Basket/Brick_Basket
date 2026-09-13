@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * BrickBasket design tokens — sourced from the official Brand Guidelines
+ * (Branding.pdf, section 5 "Official Color Palette" + section 4
+ * "Typography"). These are confirmed brand facts, not frontend estimates:
+ *
+ *   Brick Red (Primary)      #E31E24  — logo symbol, buttons, CTAs,
+ *                                        highlights, icons, accents (60%)
+ *   Charcoal Brown (Secondary) #463C3B — headlines, body text, footer
+ *                                        areas, supporting elements (15%)
+ *   Warm Ivory (background)  #FEF2E9  — primary page background,
+ *                                        light background pattern base (25%)
+ *
+ * Never hardcode a hex value in a component — reference these variables
+ * (via the Tailwind `brand-*` / `surface-*` / `ink-*` tokens) instead.
+ * Full rationale: docs/BRAND_GUIDELINES.md.
+ */
+:root {
+  /*
+   * Channel triplets ("R G B") so Tailwind can apply opacity modifiers
+   * (e.g. bg-brand-red/10) via rgb(var(--x) / <alpha-value>) — see how
+   * these are consumed in tailwind.config.ts. Hex values are the
+   * source-of-truth, given as comments for quick cross-reference.
+   */
+  --brand-red: 227 30 36; /* #E31E24 */
+  --brand-red-dark: 181 24 29; /* #B5181D — darkened for hover/active states, not in the source guide */
+  --brand-charcoal: 70 60 59; /* #463C3B */
+  --brand-ivory: 254 242 233; /* #FEF2E9 */
+  --brand-amber: 245 158 11; /* #F59E0B */
+
+  --surface: 255 255 255; /* card/content surfaces sit on top of the ivory page background */
+  --surface-muted: 254 242 233; /* = --brand-ivory */
+
+  --ink: 70 60 59; /* = --brand-charcoal */
+  --ink-muted: 138 125 121;
+
+  --color-success: 16 185 129;
+  --color-warning: 245 158 11;
+  --color-error: 220 38 38;
+
+  --border: 236 225 216;
+  --radius-card: 0.75rem;
+
+  /*
+   * Primary Font per the brand guide is "Super Wonder" (logo wordmark,
+   * headlines, hero banners) — a licensed display font not available via
+   * Google Fonts/next/font. Until the client supplies the licensed font
+   * files, headings fall back to Baloo 2 (a free, similarly bold/rounded/
+   * friendly geometric display face) — see docs/BRAND_GUIDELINES.md and
+   * docs/OPEN_QUESTIONS.md. Secondary Font "Poppins" is the confirmed body
+   * font and loads for real via next/font/google.
+   */
+  --font-sans: var(--font-poppins), system-ui, sans-serif;
+  --font-heading: var(--font-heading-fallback), var(--font-poppins), system-ui, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  /* Brand guide: "Use Warm Ivory as the primary background color to ensure
+     clarity and focus." Cards/content surfaces use --surface (white) on top. */
+  background-color: rgb(var(--brand-ivory));
+  color: rgb(var(--ink));
+}
+
+/* Visible focus ring everywhere — keyboard accessibility baseline. */
+:focus-visible {
+  outline: 2px solid rgb(var(--brand-red));
+  outline-offset: 2px;
+}

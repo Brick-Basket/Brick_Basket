@@ -1,0 +1,98 @@
+import type { PurchaseOrder } from "@/types/domain/purchase-order";
+
+/**
+ * Mock/demo dataset only — never imported outside
+ * src/lib/api/adapters/purchase-orders-adapter.ts. One PO per distinct
+ * vendor group within a finalized RFQ (`rfq_2`'s two vendor groups, plus
+ * `rfq_3`'s two) — covers every status in the 7-state machine:
+ * `po_1` issued (full lifecycle, both levels approved), `po_2` rejected at
+ * level 1, `po_3` pending level 2 (level 1 already approved), `po_4` still
+ * draft (not yet submitted). All monetary/terms values are demo/mock only.
+ */
+export const mockPurchaseOrders: PurchaseOrder[] = [
+  {
+    id: "po_1",
+    poNumber: "BB-PO-2026-001",
+    rfqId: "rfq_2",
+    requisitionId: "req_6",
+    projectId: "proj_modern_residence",
+    vendorId: "vendor_5",
+    status: "issued",
+    rejectedAtLevel: null,
+    termsAndConditions:
+      "Payment: 30 days from delivery, against invoice. Delivery: within 7 days of PO issuance, to site store. All goods subject to inspection and GRN on receipt. Rates are firm for the duration of this order.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-07-11T06:00:00.000Z",
+    releasedAt: "2026-07-14T05:00:00.000Z",
+    issuedAt: "2026-07-14T06:00:00.000Z",
+    emailDispatchStatus: "sent",
+    emailDispatchedAt: "2026-07-14T06:00:00.000Z",
+    createdAt: "2026-07-11T05:00:00.000Z",
+    updatedAt: "2026-07-14T06:00:00.000Z",
+  },
+  {
+    id: "po_2",
+    poNumber: "BB-PO-2026-002",
+    rfqId: "rfq_2",
+    requisitionId: "req_6",
+    projectId: "proj_modern_residence",
+    vendorId: "vendor_1",
+    status: "rejected",
+    rejectedAtLevel: 1,
+    termsAndConditions: "Payment: 30 days from delivery, against invoice. Delivery: within 5 days of PO issuance, to site store.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-07-12T06:00:00.000Z",
+    releasedAt: null,
+    issuedAt: null,
+    emailDispatchStatus: "not_sent",
+    emailDispatchedAt: null,
+    createdAt: "2026-07-11T05:15:00.000Z",
+    updatedAt: "2026-07-13T09:00:00.000Z",
+  },
+  {
+    id: "po_3",
+    poNumber: "BB-PO-2026-003",
+    rfqId: "rfq_3",
+    requisitionId: "req_7",
+    projectId: "proj_commercial_complex",
+    vendorId: "vendor_2",
+    status: "pending_approval_l2",
+    rejectedAtLevel: null,
+    termsAndConditions: "Payment: 45 days from delivery, against invoice. Delivery: phased over 2 weeks starting from PO issuance.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-08-21T06:00:00.000Z",
+    releasedAt: null,
+    issuedAt: null,
+    emailDispatchStatus: "not_sent",
+    emailDispatchedAt: null,
+    createdAt: "2026-08-21T05:00:00.000Z",
+    updatedAt: "2026-08-22T08:00:00.000Z",
+  },
+  {
+    id: "po_4",
+    poNumber: "BB-PO-2026-004",
+    rfqId: "rfq_3",
+    requisitionId: "req_7",
+    projectId: "proj_commercial_complex",
+    vendorId: "vendor_3",
+    status: "draft",
+    rejectedAtLevel: null,
+    termsAndConditions: "",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: null,
+    releasedAt: null,
+    issuedAt: null,
+    emailDispatchStatus: "not_sent",
+    emailDispatchedAt: null,
+    createdAt: "2026-08-21T05:30:00.000Z",
+    updatedAt: "2026-08-21T05:30:00.000Z",
+  },
+];

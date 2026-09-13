@@ -1,0 +1,81 @@
+import type { WastageEntry } from "@/types/domain/wastage-entry";
+
+/**
+ * Mock/demo dataset only — never imported outside
+ * src/lib/api/adapters/wastage-adapter.ts. Spread across both projects
+ * and a mix of materials (including `"other"`) to exercise the
+ * summary view's grouping.
+ */
+export const mockWastageEntries: WastageEntry[] = [
+  {
+    id: "waste_1",
+    projectId: "proj_modern_residence",
+    material: "cement",
+    uom: "bag",
+    quantity: 12,
+    value: 6_600,
+    reason: "Bags damaged in transit — punctured, unusable for structural pour.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-07-21T06:00:00.000Z",
+    createdAt: "2026-07-21T06:10:00.000Z",
+    updatedAt: "2026-07-21T06:10:00.000Z",
+  },
+  {
+    id: "waste_2",
+    projectId: "proj_modern_residence",
+    material: "tiles",
+    uom: "box",
+    quantity: 6,
+    value: 9_000,
+    reason: "Over-ordered against the revised floor plan; excess boxes beyond scope.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-07-25T06:00:00.000Z",
+    createdAt: "2026-07-25T06:10:00.000Z",
+    updatedAt: "2026-07-25T06:10:00.000Z",
+  },
+  {
+    id: "waste_3",
+    projectId: "proj_commercial_complex",
+    material: "tmt_steel",
+    uom: "kg",
+    quantity: 85,
+    value: 5_100,
+    reason: "Offcuts from rebar fabrication beyond planned wastage allowance.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-08-24T06:00:00.000Z",
+    createdAt: "2026-08-24T06:10:00.000Z",
+    updatedAt: "2026-08-24T06:10:00.000Z",
+  },
+  {
+    id: "waste_4",
+    projectId: "proj_commercial_complex",
+    material: "paint",
+    uom: "litre",
+    quantity: 14,
+    value: 4_172,
+    reason: "Colour-mismatch batch rejected by site engineer, procured before spec was finalized.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-08-27T06:00:00.000Z",
+    createdAt: "2026-08-27T06:10:00.000Z",
+    updatedAt: "2026-08-27T06:10:00.000Z",
+  },
+  {
+    id: "waste_5",
+    projectId: "proj_commercial_complex",
+    material: "other",
+    otherMaterialName: "Shuttering Plywood",
+    uom: "sheet",
+    quantity: 9,
+    value: 13_500,
+    reason: "Warped sheets procured above the scoped quantity, unusable for further reuse cycles.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-08-28T06:00:00.000Z",
+    createdAt: "2026-08-28T06:10:00.000Z",
+    updatedAt: "2026-08-28T06:10:00.000Z",
+  },
+];
