@@ -1,6 +1,10 @@
 # Changelog
 
-## "How It Works" given a real place in the site's navigation
+## FINAL_HARDENING_REPORT.md corrected — it was stale about verification status
+
+The owner asked whether the frontend is ready to hand to a backend developer. `FINAL_HARDENING_REPORT.md` (root of the repo) still said, as its final readiness score, "not build-verified" / "zero commands in the required verification chain have ever been run" — true when that report was written, but false by the time this question was asked: the owner's own three real local runs (documented in this changelog's "Real build/test verification pass", "Lint cleanup pass", and "Third real run" entries) had since gotten `npm run typecheck`, `npm run lint`, and `npm test` all the way to clean (0 errors, 0 warnings, 112/112 passing), with `npm run dev` confirmed working. Handing that report over as-is would have understated the project's real state to whoever reads it next.
+
+- **`FINAL_HARDENING_REPORT.md`**: added a new §0 at the top, written after the fact, summarizing what the three real runs found and fixed and stating the actual current verified status plainly, and added a short "superseded" note directly above §10's original score so a reader hits the correction before the outdated conclusion. Nothing in §1–§9's original record of what was done was altered or removed — only the closing verification status is corrected, and the correction is clearly dated/separated from the original text rather than blended into it.
 
 Fixing the "Watch Video" button (previous entry) surfaced a real gap: `/how-it-works` was a fully-built page with genuinely no link to it anywhere in the site — not the header nav, not the footer, not any other page. The only way a visitor could ever reach it was the hero's old "Watch Video" button, which now correctly opens the real video instead — so without this change, the page would have become permanently unreachable.
 
