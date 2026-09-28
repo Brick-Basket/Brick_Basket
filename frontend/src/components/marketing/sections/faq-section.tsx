@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+"use client";
+
 import { FaqAccordion, type FaqItem } from "@/components/marketing/faq-accordion";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { useLanguage } from "@/components/providers/language-provider";
+import { FAQ_HI } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils/cn";
 
 /**
@@ -55,17 +58,24 @@ const FAQS: FaqItem[] = [
 export function FaqSection({
   id,
   className,
-  heading,
+  showHeading,
 }: {
   id?: string;
   className?: string;
   /** Shown above the accordion — omit on the standalone page, which uses PageBanner instead. */
-  heading?: { eyebrow?: string; title: ReactNode };
+  showHeading?: boolean;
 }) {
+  const { lang, t } = useLanguage();
+
+  const items: FaqItem[] = FAQS.map((item) => {
+    const tr = FAQ_HI[item.question];
+    return lang === "hi" && tr ? tr : item;
+  });
+
   return (
     <section id={id} className={cn("container py-16 md:py-20", className)}>
-      {heading && <SectionHeading eyebrow={heading.eyebrow} title={heading.title} className="mb-10" />}
-      <FaqAccordion items={FAQS} />
+      {showHeading && <SectionHeading eyebrow={t("faq.headingEyebrow")} title={t("faq.headingTitle")} className="mb-10" />}
+      <FaqAccordion items={items} />
     </section>
   );
 }

@@ -56,11 +56,15 @@ Full per-entity field tables are added to this file as each owning part ships.
 | `email` | `string` | yes | |
 | `phone` | `string` | yes | |
 | `source` | `"website" \| "social_media" \| "call_whatsapp" \| "personal_reference"` | yes | confirmed set of lead sources per owner requirements |
-| `subject` | `string` | yes | |
+| `subject` | `string` | yes | kept as a real field (still shown in `LeadDetailDrawer`, still captured by `LeadForm`) — see owner-corrections note below for why it's no longer the *displayed* column/card line |
 | `message` | `string` | yes | |
+| `city` | `string` | yes (admin form) | **added, owner correction** — see below. `CreateLeadInput` types it as optional so the public Contact form/Cost Estimator enquiry path (which don't collect a city) keep compiling unchanged; the admin `LeadForm`'s own zod schema enforces it as required (`min(2)`) |
+| `receivedDate` | `string` (plain `YYYY-MM-DD`, not full ISO) | yes (admin form) | **added, owner correction** — the actual date the enquiry was received, independent of `createdAt` (when the record was *entered* into the system, which may be later). Same optional-in-type/required-in-form treatment as `city` |
 | `status` | `"new" \| "contacted" \| "qualified" \| "converted" \| "lost"` | yes | **CONFIGURABLE — pending confirmation**, see `OPEN_QUESTIONS.md` #3 and `docs/STATUS_DEFINITIONS.md` |
 | `assignedTo` | staff user id \| `null` | yes | added Part 4; sourced from the demo staff directory (`src/lib/auth/mock-users.ts`) today, a real Users/Staff lookup once a backend exists |
 | `createdAt` / `updatedAt` | ISO `string` | yes | |
+
+**Owner corrections (this pass) — see `docs/OPEN_QUESTIONS.md` #70:** (a) "In place of subject, city name should reflect" is implemented as a *display* swap — `LeadTable`'s column and `LeadKanban`'s card line now show `city` instead of `subject`, but `subject`/`message` remain real fields (still useful enquiry context, still visible in the detail drawer and still captured on create) rather than being removed from the data model; (b) `LeadForm` gained a `CityAutocomplete`-driven City field and a `type="date"` Date of Receipt field (capped at today); (c) all "All statuses" labels were relabeled "All status" verbatim, per the owner's literal wording; (d) `LeadKanban` cards for `status === "converted"` now render with a green-tinted border/background; (e) the Kanban card also now shows `receivedDate`.
 
 Relationships: `Lead → Customer/Project` once a lead converts (Contract Management, Part 5, owns that transition — not implemented yet). `Lead.assignedTo → staff user`. Currently written by: the public Contact form (`source: "website"`, Part 2) and the admin Lead Management module's create/edit form and status-transition action (Part 4). Read/triaged by: `/admin/leads` (table + Kanban pipeline views, Part 4).
 
@@ -87,8 +91,9 @@ Relationships: `LeadActivity → Lead` (many-to-one), `LeadActivity.authorId →
 |---|---|---|---|
 | `id` | `string` | yes | |
 | `title` | `string` | yes | |
-| `category` | `DocumentCategory` (6-value union) | yes | **owner-confirmed, NOT configurable** — see `docs/STATUS_DEFINITIONS.md` and `docs/FILE_UPLOADS.md` |
-| `projectId` | `string` | yes | → `Project.id` — every document belongs to exactly one project |
+| `category` | `DocumentCategory` (6-value union) | yes | **owner-confirmed, NOT configurable** — see `docs/STATUS_DEFINITIONS.md` and `docs/FILE_UPLOADS.md`. Owner correction #1 ("no separate category to upload the document") is implemented as removing the standalone category-only *upload entry point* (there's no generic "Upload Document" button anywhere outside a specific contract's page any more) — the category/type-of-document field itself is kept on the upload form, since correction #3 explicitly still asks for "the necessary option to upload the type of document" |
+| `contractId` | `string` | yes | **added, owner correction #2/#3 — now the PRIMARY scoping field.** Every document is uploaded, listed, and filtered through exactly one `Contract` (`→ Contract.id`); the old `/admin/documents` flat list + generic upload button is replaced by a Contract Directory landing page and a per-contract `/admin/documents/[contractId]` page that is the only place uploading happens. See `docs/OPEN_QUESTIONS.md` #73 |
+| `projectId` | `string \| undefined` | **no (changed from required)** | **downgraded, owner correction** — kept only as a denormalized copy of the linked contract's `projectId` at upload time, purely for backward-compat with the customer-portal dashboard's existing project-scoped `/dashboard/documents` view (out of this pass's scope, left unchanged — see `docs/OPEN_QUESTIONS.md` #73). A real backend should treat `contractId` as authoritative and derive project association via `Contract.projectId`, not store it twice |
 | `fileName` / `fileType` / `fileSizeBytes` | `string` / `string` / `number` | yes | metadata only; no real file bytes are ever stored on this type — see `docs/FILE_UPLOADS.md` for where the (mock-only) actual bytes live |
 | `version` | `number` | yes | current version number; history lives in `DocumentVersion[]`, not on this record |
 | `uploadedBy` / `uploadedByName` | `string` | yes | staff user id/name at time of the current version's upload |
@@ -97,9 +102,15 @@ Relationships: `LeadActivity → Lead` (many-to-one), `LeadActivity.authorId →
 | `warrantyItem` | `string` | no | only meaningful for the two warranty categories |
 | `warrantyExpiresAt` | ISO `string` | no | only meaningful for the two warranty categories |
 
-Relationships: `Document → Project` (many-to-one). Read/written by: `/admin/documents` (admin, full lifecycle — upload, edit visibility, upload new version, Warranty Mapping view) and `/dashboard/documents` (customer, read-only, scoped to `visibleToCustomer: true` and the project currently selected in the global `ProjectSelector` — the first module screen to consume `ProjectContext` for real data scoping, not just display; see `docs/OPEN_QUESTIONS.md` #19).
+Relationships: `Document → Contract` (many-to-one, primary scope, owner correction this pass) and `Document → Project` (many-to-one, denormalized/secondary, kept for the customer portal only — see above). Read/written by: `/admin/documents` (admin — now a **Contract Directory** landing page: search + city + "type of package" filters over contracts, with a document count per contract, linking into...), `/admin/documents/[contractId]` (admin — the actual upload/list/Warranty-Mapping page for one contract, replacing the old top-level list+dialog pattern) and `/dashboard/documents` (customer, read-only, scoped to `visibleToCustomer: true` and the project currently selected in the global `ProjectSelector`, unchanged this pass — see `docs/OPEN_QUESTIONS.md` #19).
 
 **Frontend implementation decision:** no document-level "status" field was invented beyond `version: number` — the owner requirements don't call for one, and the plain version counter plus the (owner-required) warranty fields already cover what's needed. See `docs/OPEN_QUESTIONS.md`.
+
+**Owner correction #4 (Warranty Mapping):** `DocumentWarrantyMapping` now takes a required `contractsById: Map<string, Contract>` prop and shows `contract.contractNumber` on every card, alongside the existing warranted-item/expiry details.
+
+**Owner correction #5 (filters):** city, contract reference number, and "type of package" filters were placed on the Contract Directory page (`/admin/documents`), not on the per-contract document list — since city/contract-number/package-type are contract-level attributes, best filtered where contracts are listed. "Type of package" is interpreted as the new `Contract.contractCategory` (IHB/Large Construction/Special Services), not the IHB-specific `packageCriteria` tier — see `docs/OPEN_QUESTIONS.md` #73 for the alternate reading this rules out.
+
+**Owner correction #6 (project list + filter page):** the Contract Directory (`/admin/documents`) is the "project list with contract reference number" the owner asked for; clicking a row goes to that contract's own page, which carries forward the pre-existing All Documents / Warranty Mapping toggle as the "filter page ... to filter warranty documents & other documents separately."
 
 ## DocumentVersion — implemented (Part 6)
 
@@ -188,21 +199,28 @@ Same thin-slice treatment `Project` got in Part 3 — extended by whichever late
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `id` | `string` | yes | |
-| `contractNumber` | `string` | yes | backend-assigned display reference, e.g. `"BB-CNT-2026-014"` |
+| `contractNumber` | `string` | yes | **format changed, owner correction**: `BB/{State}/{City}/{year}/{00001}` (spaces stripped from state/city, e.g. `BB/Gujarat/Vadodara/2026/00001`), generated by `ContractsAdapter.generateContractNumber` — a **state+city+year-scoped counter** (resets to `00001` for a new city or a new year), a frontend interpretation of the owner's literal format string; the old `"BB-CNT-2026-014"`-style global counter is retired. See `docs/OPEN_QUESTIONS.md` #71 |
 | `title` | `string` | yes | |
 | `customerId` | `string` | yes | → `Customer.id` |
 | `leadId` | `string` | no | → the originating `Lead`, when applicable |
 | `projectId` | `string` | no | → `Project.id`, once one is assigned |
-| `status` | `"draft" \| "sent_for_acceptance" \| "accepted" \| "declined"` | yes | **CONFIGURABLE — pending confirmation**, see `OPEN_QUESTIONS.md` #3 and `docs/STATUS_DEFINITIONS.md` |
+| `city` | `string` | yes | **added, owner correction** — city is now the primary identifying label shown in `ContractTable`/`ContractDetail` (replacing the customer-name column, see below); also feeds `contractNumber` generation |
+| `state` | `string` | yes | **added, owner correction** — captured alongside `city` (auto-filled when a `CityAutocomplete` suggestion is selected, editable after); also feeds `contractNumber` generation |
+| `contractCategory` | `"ihb" \| "large_construction" \| "special_services"` (`ContractCategoryType`) | yes | **added, owner correction** — a NEW, contract-level classification, distinct from the pre-existing per-line-item `ContractCategory` (civil/electrical/etc., unchanged, see below). Drives which of the two fields below is required — see `docs/OPEN_QUESTIONS.md` #72 |
+| `servicesDescription` | `string` | conditionally (required when `contractCategory === "large_construction"`) | **added, owner correction** — free text capturing "all services" when Large Construction is selected |
+| `packageCriteria` | `string` (a `CONSTRUCTION_PACKAGES` slug, e.g. `"essential"`/`"smart"`/`"premium"`/`"signature"`) | conditionally (required when `contractCategory === "ihb"`) | **added, owner correction** — reuses the existing, owner-confirmed public-site package tiers rather than inventing a new tier list, see `docs/OPEN_QUESTIONS.md` #72 |
+| `attachment` | `ContractAttachment \| undefined` (`{fileName, fileType, fileSizeBytes}`) | no | **added, owner correction** ("Contract format shall be shared for adding it as an attachment") — metadata-only, same mock-file convention as `Document`/`Invoice`; the actual (mock) bytes live behind `ContractsAdapter.getAttachmentPreviewUrl`, an in-memory object URL lost on reload |
+| `contractDate` | `string` (plain date) | yes | **added, owner correction** ("Date of creation of contract option should be there") |
+| `status` | `"draft" \| "sent_for_acceptance" \| "accepted" \| "declined"` | yes | **CONFIGURABLE — pending confirmation**, see `OPEN_QUESTIONS.md` #3 and `docs/STATUS_DEFINITIONS.md`. "All statuses" filter labels relabeled "All status" this pass, per the owner's literal wording |
 | `lineItems` | `ContractLineItem[]` | yes | see below |
 | `notes` | `string` | no | free-text terms shown alongside line items |
 | `sentAt` / `respondedAt` | ISO `string \| null` | yes | |
 | `declineReason` | `string \| null` | yes | only meaningful when `status === "declined"` |
 | `createdAt` / `updatedAt` | ISO `string` | yes | |
 
-`ContractLineItem`: `id`, `category` (`ContractCategory` — **CONFIGURABLE**, see `docs/STATUS_DEFINITIONS.md`), `description`, `uom`, `quantity: number`, `rate: number` (rupees per `uom` unit). Line amount (`quantity × rate`) and the contract total are always computed at render time, never stored — see the field typing conventions above.
+`ContractLineItem`: `id`, `category` (`ContractCategory` — **CONFIGURABLE**, see `docs/STATUS_DEFINITIONS.md`; unrelated to the new contract-level `contractCategory` above — kept as two separate fields/types rather than merged, see `docs/OPEN_QUESTIONS.md` #72), `description`, `uom`, `quantity: number`, `rate: number` (rupees per `uom` unit). Line amount (`quantity × rate`) and the contract total are always computed at render time, never stored — see the field typing conventions above.
 
-Relationships: `Lead → Customer → Contract` (wired by id, per the owner requirement). `Contract → Project` (optional). Read/written by: `/admin/contracts` (admin, full lifecycle) and `/dashboard/contracts` (customer, read + accept/decline only — drafts are never shown, see `docs/WORKFLOWS.md`).
+Relationships: `Lead → Customer → Contract` (wired by id, per the owner requirement). `Contract → Project` (optional). Read/written by: `/admin/contracts` (admin, full lifecycle — `ContractTable` now shows `city` instead of `customerId`'s resolved name, per owner correction) and `/dashboard/contracts` (customer, read + accept/decline only — drafts are never shown, see `docs/WORKFLOWS.md`).
 
 ## ContractAuditEntry — implemented (Part 5)
 
@@ -808,6 +826,54 @@ No stored status field, no relationships table entry of its own (it reads four o
 
 No type, no adapter, no mock data — deliberately, per the owner's explicit §8H instruction: "detailed Cost Management requirements will come in a separate Excel sheet from Pushkar Tiwari. DO NOT invent this module's detailed business rules. Create a scalable placeholder module shell." `/admin/cost-management` renders `ModulePlaceholder` behind a `PermissionGuard` for `cost_management:view` (already existed, already held only by `admin`, Part 3) — the one change from its Part 1–17 scaffold. See `docs/OPEN_QUESTIONS.md` #4.
 
+## ConstructionPackage / PackageComparisonRow / EstimatorConfig — PROPOSED, not implemented as real entities (post-Part-20)
+
+Unlike Cost Management above, this isn't a case of unknown business rules — every field below is already live, today, as plain exported data in two frontend source files with no database, adapter, or API behind either of them: `src/lib/content/public-site.ts` (`ConstructionPackage`, `PACKAGE_COMPARISON_ROWS`) and `src/components/marketing/sections/cost-estimator-math.ts` (`GROUND_COVERAGE_OPTIONS`, timeline options). `/admin/pricing-content` is scaffolded as a placeholder for this remaining scope (per `docs/OPEN_QUESTIONS.md` #65) precisely so this gap is navigable, not because the shape below needs discovery.
+
+**Update (`docs/OPEN_QUESTIONS.md` #67):** the BOQ-item-templates piece of this note — originally `BOQ_ITEM_TEMPLATES`/`TIER_FINISH_SHARE` in `cost-estimator-math.ts` — is **no longer proposed; it's a real, implemented entity now.** See the `BoqRateItem` section immediately below this one. What remains genuinely proposed-and-unbuilt is only `ConstructionPackage`, `PackageComparisonRow`, and the ground-coverage/timeline-options portion of `EstimatorConfig` — the broader "Package Rates, Comparison Table & Estimator Assumptions" scope `docs/OPEN_QUESTIONS.md` #65 describes.
+
+**`ConstructionPackage`** (proposed table; current shape mirrors the `ConstructionPackage` interface already in `public-site.ts`):
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | Backend-assigned, per this repo's usual convention (§ every other entity) |
+| `slug` | `string` | `"essential" \| "smart" \| "premium" \| "signature"` today — a real backend would decide whether tiers stay a fixed enum or become fully dynamic rows |
+| `name` | `string` | Display name |
+| `rateMin`, `rateMax` | `number` | ₹ per sqft; equal for a flat-rate tier (Essential) |
+| `coreFeatures` | `string` | Owner-supplied paragraph, currently rendered on `/plans`'s cards |
+| `bestFor` | `string` | Owner-supplied one-line audience description |
+| `newAtThisTier` | `string[]` | Frontend-derived bullets (docs/OPEN_QUESTIONS.md #64) — 3–4 phrases per tier, shown on the estimator's package-picker cards |
+| `displayOrder` | `number` | Not in the current frontend type (array order is used instead) — would be needed if this becomes a real editable list |
+
+**`PackageComparisonRow`** (proposed table): `id`, `dimension` (`string`, e.g. "Design & Planning"), and one value column per package slug (`essential`/`smart`/`premium`/`signature`, each `string`) — mirrors `PACKAGE_COMPARISON_ROWS` in `public-site.ts` exactly, including its flagged Signature-cumulative-copy assumption (`docs/OPEN_QUESTIONS.md` #64).
+
+**`EstimatorConfig`** (proposed — likely a single settings row, not a list): `groundCoverageOptions` (`number[]`, currently `[50,55,60,65,70,75]`), `defaultGroundCoveragePercent` (`number`, currently `65`), `timelineOptions` (`string[]`, currently defined inline in `cost-estimator-section.tsx` rather than in `public-site.ts` — would need moving if this becomes config-driven). *(This entry previously also proposed a `boqItemTemplates` field — that piece is now real and implemented, see `BoqRateItem` below; it is no longer part of this proposed-but-unbuilt settings row.)*
+
+**Not decided by this note, deliberately**: whether any of this should actually become real, backend-persisted, admin-editable data, versus staying a rate card the dev team maintains directly in code (precedent: `FixedAsset.value`'s `FIXED_ASSET_MIN_VALUE`, `docs/VALIDATION_RULES.md`'s one owner-confirmed rule, is exactly this kind of code-level constant and nobody considers that a gap). That's an ownership/product call for the owner and backend team, not a data-modeling one — this section only makes sure the shape is fully specified *if* the answer is yes, so a "yes" doesn't need this file re-derived from scratch. See `docs/OPEN_QUESTIONS.md` #65 and `docs/API_CONTRACTS.md`'s matching section for the proposed (equally unconfirmed) endpoint sketch.
+
+## BoqRateItem — implemented (BOQ rate management pass, post-Part-20 stabilization)
+
+`src/types/domain/boq-rate-item.ts` · adapter: `src/lib/api/adapters/boq-rates-adapter.ts` (`BoqRatesAdapter`, mock-backed) · mock data: `src/data/mock/boq-rate-items.ts` (11 seed records) · hooks: `src/hooks/use-boq-rates.ts` (`useBoqRates`, `useUpdateBoqRateItem`) · full contract: `docs/API_CONTRACTS.md`. **Internal-only, per `docs/OPEN_QUESTIONS.md` #76**: the owner asked for the BOQ to never be visible to site visitors, "only the core brick basket team." `computeBoqRows` (`cost-estimator-math.ts`) still exists and is still correct, but the public Cost Estimator (`cost-estimator-section.tsx`) no longer calls it or renders any BOQ table/breakdown — this entity is manually maintained and viewed exclusively at `/admin/pricing-content` (view: `pricing_content:view`; edit: `pricing_content:manage`), which was already permission-gated before this change. Full background and the frontend decisions behind this shape: `docs/OPEN_QUESTIONS.md` #67.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` | `string` | yes | |
+| `key` | `string` | yes | stable machine key (e.g. `"cement"`, `"flooring"`), independent of `id`, used to keep the seed data and any future re-import aligned |
+| `label` | `string` | yes | display name shown in the BOQ table and the admin screen |
+| `unit` | `string` | yes | e.g. `"bags"`, `"kg"`, `"sqft"`, `"litres"` |
+| `qtyPerSqft` | `number` | yes | quantity of this material/labor item per sqft of built-up area — combined with the project's built-up area to derive `quantity` |
+| `minQty` | `number` | no | floor applied to the derived quantity for a few discrete items (see `discrete` below) |
+| `discrete` | `boolean` | yes | when `true`, the derived quantity is rounded up to a whole unit (e.g. doors & windows) rather than left fractional |
+| `group` | `BoqTradeGroup` (`"structure" \| "finish"`) | yes | **frontend classification, not owner-confirmed** — see `docs/OPEN_QUESTIONS.md` #67(c). Structure items (cement, steel, bricks, sand, aggregate, labor) keep one flat rate across every package tier; finish items (flooring, paint, doors & windows, plumbing, electrical) get 4 distinct tier rates |
+| `ratePerUnit` | `BoqTierRates` (`{ essential, smart, premium, signature }`, each `number`, ₹) | yes | the real, admin-editable ₹-per-unit rate — for a `"structure"` item all four tier values are kept equal (edited together via one input in the admin form); for a `"finish"` item each tier is a distinct, independently-editable value |
+| `rationale` | `string` | no | free-text note the admin can attach to explain/justify a rate, shown in the edit history context |
+| `updatedAt` | ISO `string` | yes | |
+| `updatedBy` | `string` | no | admin user name/id who last edited this item's rate |
+
+Relationships: none — a flat, admin-maintained rate-card list, not scoped to a `Project`. `amount = quantity × ratePerUnit[tier]` is always computed at render time (`computeBoqRows`), never stored, per the field typing conventions above; `costSharePercent` (each row's share of the BOQ's own total) is likewise derived post-hoc for display only.
+
+**Frontend implementation decisions, not owner-confirmed** (full detail in `docs/OPEN_QUESTIONS.md` #67): (a) the seed ₹ values are frontend-estimated from public market-rate research, not owner-supplied — an admin should review and correct every one of the 11 rows before this is treated as real pricing; (b) the BOQ table's own total (Σ `amount` across all 11 rows) is **not** forced to equal the headline "Estimated Project Cost" shown elsewhere on the estimator — the two are independently sourced figures and a gap between them is expected, not a bug; (c) the `structure`/`finish` classification and which items exist at all (still exactly 11) is a frontend judgment call carried over from the pre-#67 model, not owner-specified; (d) there is no add/remove-row affordance in the admin UI — only editing the 11 existing items' quantity-per-sqft, rate(s), and rationale is supported today.
+
 ## AppNotification — implemented (Part 19)
 
 `src/types/domain/notification.ts` · adapter: `src/lib/api/adapters/notifications-adapter.ts` (`NotificationsAdapter`, mock-backed — **owns no mock data file of its own**, the second entity in this app that doesn't, after `CostToComplete` (Part 18) — a composition of eight other adapters' own public methods, never their mock arrays) · full contract: `docs/API_CONTRACTS.md`.
@@ -868,3 +934,36 @@ No relationships table entry — reads nine other adapters (the same set `AppNot
 No dedicated audit-log entity — the same scope reduction already applied to RFQ/GRN/MRC (`docs/OPEN_QUESTIONS.md` #30/#32/#33), since §6B's text gives no "History" requirement. **Issuing a request does not auto-write a `StockEntry` row** — `approvedIssuedQuantity`/`issueDate` are this entity's own durable record of what left stock; reconciling that against `StockEntry.consumedToday` for the same day is left to Stores staff or a real backend, the same no-automatic-link gap already flagged for GRN → Stock (#32d). See `src/types/domain/store-requisition.ts`'s header comment for the full reasoning.
 
 **BrickBasket final hardening pass — data-model gap this model doesn't cover.** This type has no field recording *who actually performed the issuance* — `requestedBy`/`requestedByName` name the requester, and `storeRemarks` is whoever decided (approve/reject), but nothing on `StoreRequisition` itself identifies the specific authenticated actor who clicked "Issue." A real backend's implementation of `POST /api/store-requisitions/:id/issue` (see `docs/API_CONTRACTS.md`'s full 8-step atomic-transaction contract for that endpoint) needs to record that actor somewhere — either add `issuedBy`/`issuedByName` fields to this entity (mirroring `requestedBy`/`requestedByName`), or capture it purely in the backend's own stock-movement/audit record if one is added. This frontend's mock `issue()` method already accepts an `actor` parameter (`StoreRequisitionsAdapter.issue(id, actor)`) but has nowhere to persist it against an in-memory record with no such field — not a bug in the mock, just evidence of the gap this note names. Not owner-confirmed either way; tracked in `docs/OPEN_QUESTIONS.md`.
+
+## SiteUpdate / SiteUpdateMedia — implemented (Site Updates module, post-Part-20)
+
+Frontend files: `src/types/domain/site-update.ts`, `src/lib/api/adapters/site-updates-adapter.ts` (`SiteUpdatesAdapter` — the contract mirrors its methods 1:1), `src/hooks/use-site-updates.ts`, `src/data/mock/site-updates.ts`. Requested directly by the owner: *"there must be a feature in which daily photo and video upload option must be there... it's a very important feature."* Full reasoning for why this is a new entity rather than folded into `Document` or `DPR` is in `site-update.ts`'s own header comment — summarized: `DocumentCategory` is an owner-confirmed, fixed 6-value union (adding a 7th "daily photo feed" category would silently override a confirmed value), and `DPR` is dense internal operations data with no customer-facing surface anywhere else in the app (exposing it wholesale would be a much bigger, unconfirmed scope change than "let the customer see photos").
+
+**`SiteUpdate`**
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | |
+| `projectId` | `string` | |
+| `updateDate` | `string` (ISO date) | the calendar day this update covers — matches `StockEntry.date`/`DPR.reportDate`'s convention |
+| `remarks` | `string` | required — a plain-language note from the field; a photo with zero context isn't useful on its own |
+| `media` | `SiteUpdateMedia[]` | fixed at creation — no "add more photos to an existing update" action, see below |
+| `relatedWorkItem` | `string?` | free text (e.g. "Foundation & Plinth") — **not a real FK**; no confirmed link exists between this module and `ScheduleActivity`/`DPR`'s own IDs |
+| `postedBy` / `postedByName` | `string` | the staff member who posted it |
+| `visibleToCustomer` | `boolean` | mirrors `Document.visibleToCustomer`, but **defaults to `true`** here (Document defaults to `false`) — surfacing progress to the customer is this module's whole purpose; a staff member unchecks it only for an internal working note not yet ready to share |
+| `createdAt` / `updatedAt` | `string` | |
+
+**`SiteUpdateMedia`**
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | |
+| `type` | `"photo" \| "video"` | derived client-side from the uploaded file's MIME type |
+| `fileName` / `fileType` / `fileSizeBytes` | `string` / `string` / `number` | |
+| `caption` | `string?` | optional short label for this specific item; the upload form doesn't currently expose a per-file caption input — only the seed data uses it, to show the field is supported |
+
+**No geolocation/GPS coordinates are captured or displayed anywhere.** The reference site this feature was modeled after (an external dummy site reviewed for feature ideas, see `docs/CHANGELOG.md`) called its version "geo-tagged" — this frontend deliberately does not, since there's no location API wired in and no owner-confirmed requirement to fabricate coordinates.
+
+**Media is immutable after creation** — there is no "add more photos to an existing update" or "delete one photo" action. Posting a new update for a later date is the intended flow instead, which also keeps each update's date/remarks honestly tied to one visit rather than an ever-growing bucket. Same "no file on record" mock convention as Document Management: a media item uploaded during the current browser session has an in-memory object URL (`SiteUpdatesAdapter.getPreviewUrl(mediaId)`); every seeded demo record and anything after a reload shows an explicit empty state instead of a broken preview. See `docs/FILE_UPLOADS.md`.
+
+Not owner-confirmed, tracked in `docs/OPEN_QUESTIONS.md`: file size/type limits (same open question as Document Management's #8); whether `relatedWorkItem` should become a real FK into Schedule/DPR once those modules' own IDs are stable; whether staff should be able to delete an individual update (there's no delete action anywhere in this module today, staff- or admin-side).

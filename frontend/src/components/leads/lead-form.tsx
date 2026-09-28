@@ -9,16 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
+import { CityAutocomplete } from "@/components/ui/city-autocomplete";
 import { useCreateLead, useUpdateLead } from "@/hooks/use-leads";
 import { assignableStaffDirectory } from "@/lib/auth/mock-users";
 import { LEAD_SOURCE_CONFIG } from "@/components/leads/lead-source-config";
 import type { Lead } from "@/types/domain/lead";
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 const leadFormSchema = z.object({
   name: z.string().min(2, "Enter the lead's full name"),
   email: z.string().email("Enter a valid email address"),
   phone: z.string().min(8, "Enter a valid phone number"),
   source: z.enum(["website", "social_media", "call_whatsapp", "personal_reference"]),
+  city: z.string().min(2, "Add a city"),
+  receivedDate: z.string().min(1, "Add the date of receipt"),
   subject: z.string().min(3, "Add a subject"),
   message: z.string().min(5, "Add a few details"),
   assignedTo: z.string(),
@@ -33,6 +40,11 @@ type LeadFormValues = z.infer<typeof leadFormSchema>;
  * assignment at creation, per `lead.ts`). `mode: "edit"` additionally
  * allows reassigning staff. Pipeline-status changes happen from the
  * table/Kanban, not this form — see `lead-status-config.ts`.
+ *
+ * `city` (owner correction #7) and `receivedDate` (owner correction #3) are
+ * both required here even though they're optional on `CreateLeadInput` at
+ * the type level — that looser typing exists only so the public Contact
+ * form still compiles; this admin form enforces both via the zod schema.
  */
 export function LeadForm({
   mode,
@@ -52,6 +64,8 @@ export function LeadForm({
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -60,11 +74,15 @@ export function LeadForm({
       email: lead?.email ?? "",
       phone: lead?.phone ?? "",
       source: lead?.source ?? "website",
+      city: lead?.city ?? "",
+      receivedDate: lead?.receivedDate ?? today(),
       subject: lead?.subject ?? "",
       message: lead?.message ?? "",
       assignedTo: lead?.assignedTo ?? "",
     },
   });
+
+  const cityValue = watch("city");
 
   const onSubmit = async (values: LeadFormValues) => {
     if (mode === "create") {
@@ -73,6 +91,8 @@ export function LeadForm({
         email: values.email,
         phone: values.phone,
         source: values.source,
+        city: values.city,
+        receivedDate: values.receivedDate,
         subject: values.subject,
         message: values.message,
       });
@@ -84,6 +104,8 @@ export function LeadForm({
       name: values.name,
       email: values.email,
       phone: values.phone,
+      city: values.city,
+      receivedDate: values.receivedDate,
       subject: values.subject,
       message: values.message,
       assignedTo: values.assignedTo || null,
@@ -117,6 +139,28 @@ export function LeadForm({
               </option>
             ))}
           </Select>
+        </FormField>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="City" htmlFor="lead-city" required error={errors.city?.message} hint="Start typing — pick from the list, or enter your own.">
+          <CityAutocomplete
+            id="lead-city"
+            value={cityValue}
+            invalid={!!errors.city}
+            ariaLabel="City"
+            onValueChange={(v) => setValue("city", v, { shouldValidate: true, shouldDirty: true })}
+            onSelectCity={(c) => setValue("city", c.city, { shouldValidate: true, shouldDirty: true })}
+          />
+        </FormField>
+        <FormField
+          label="Date of Receipt"
+          htmlFor="lead-received-date"
+          required
+          error={errors.receivedDate?.message}
+          hint="When the enquiry actually came in — can be earlier than today."
+        >
+          <Input id="lead-received-date" type="date" max={today()} invalid={!!errors.receivedDate} {...register("receivedDate")} />
         </FormField>
       </div>
 

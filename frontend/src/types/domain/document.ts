@@ -3,7 +3,13 @@
  * (admin + customer), per the owner requirements.
  *
  * Source module: Drawing & Document Management (Part 6).
- * Relationships: `projectId` → `Project`. `uploadedBy` → a staff user
+ * Relationships: `contractId` → `Contract` (the primary scoping key, per
+ * owner corrections #2/#3/#6 — "document uploading permission shall be
+ * routed through respective contract only"). `projectId` is kept as an
+ * optional, denormalized copy of the linked contract's `projectId` at
+ * upload time, purely so the customer portal's existing "current project"
+ * scoping (`ProjectProvider`) keeps working without also becoming
+ * contract-aware — see docs/OPEN_QUESTIONS.md. `uploadedBy` → a staff user
  * (demo directory, `src/lib/auth/mock-users.ts`).
  * Backend ownership: real file storage, versioning, and access control are
  * all backend-owned (see docs/OPEN_QUESTIONS.md #8–9) — the frontend only
@@ -32,7 +38,10 @@ export interface Document {
   id: string;
   title: string;
   category: DocumentCategory;
-  projectId: string;
+  /** The contract this document is filed against — required going forward (owner correction). */
+  contractId: string;
+  /** Denormalized from `Contract.projectId` at upload time — see this type's header comment. May be absent for a contract with no project assigned. */
+  projectId?: string;
   fileName: string;
   /** Browser MIME type, e.g. "application/pdf" | "image/png". Allowed types/sizes are TBD — see docs/OPEN_QUESTIONS.md #8. */
   fileType: string;
@@ -77,7 +86,9 @@ export interface DocumentVersion {
 export type CreateDocumentInput = {
   title: string;
   category: DocumentCategory;
-  projectId: string;
+  contractId: string;
+  /** Filled in by the upload form from the selected contract's own `projectId` — see `Document`'s header comment. */
+  projectId?: string;
   fileName: string;
   fileType: string;
   fileSizeBytes: number;

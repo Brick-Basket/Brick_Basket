@@ -1,28 +1,31 @@
 "use client";
 
-import { useState } from "react";
-import { LayoutGrid, Plus, Table as TableIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog } from "@/components/ui/dialog";
-import { EmptyState } from "@/components/domain/empty-state";
+import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ErrorState } from "@/components/domain/error-state";
+import { EmptyState } from "@/components/domain/empty-state";
 import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
-import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
+import { useContracts } from "@/hooks/use-contracts";
+import { useCustomers } from "@/hooks/use-customers";
 import { useDocuments } from "@/hooks/use-documents";
-import { DocumentFilters } from "@/components/documents/document-filters";
-import { DocumentTable } from "@/components/documents/document-table";
-import { DocumentWarrantyMapping } from "@/components/documents/document-warranty-mapping";
-import { DocumentUploadForm } from "@/components/documents/document-upload-form";
-import { DocumentPreviewPanel } from "@/components/documents/document-preview-panel";
-import type { Document } from "@/types/domain/document";
-import type { DocumentListParams } from "@/lib/api/adapters/documents-adapter";
+import { ContractDirectoryFilters, type ContractDirectoryFilterValues } from "@/components/documents/contract-directory-filters";
+import { ContractDirectoryTable } from "@/components/documents/contract-directory-table";
+import { ADMIN_ROUTES } from "@/lib/constants/routes";
 
-type ViewMode = "list" | "warranty";
+const DIRECTORY_PAGE_SIZE = 200;
 
-const PAGE_SIZE = 10;
-const WARRANTY_PAGE_SIZE = 100;
-
+/**
+ * Documents module landing page — owner corrections #1/#2/#6: no more
+ * standalone "pick any project + category, upload" entry point. Instead
+ * this is a "project list with contract reference number" (a Contract
+ * Directory): every contract that exists, with its reference number, city,
+ * type, and document count. Clicking a row goes to
+ * `/admin/documents/[contractId]`, which is where upload and the
+ * All Documents / Warranty Mapping toggle actually live — scoped to that
+ * one contract, per correction #3 ("document uploading permission shall be
+ * routed through respective contract only").
+ */
 export default function AdminDocumentsPage() {
   return (
     <PermissionGuard
@@ -33,114 +36,84 @@ export default function AdminDocumentsPage() {
         </div>
       }
     >
-      <AdminDocumentsContent />
+      <AdminDocumentsDirectoryContent />
     </PermissionGuard>
   );
 }
 
-function AdminDocumentsContent() {
-  const [view, setView] = useState<ViewMode>("list");
-  const [filters, setFilters] = useState<DocumentListParams>({
+function AdminDocumentsDirectoryContent() {
+  const router = useRouter();
+  const [filters, setFilters] = useState<ContractDirectoryFilterValues>({ search: "", city: "", contractCategory: "" });
+
+  const { status: contractsStatus, error: contractsError, result: contractsResult, refetch } = useContracts({
+    search: filters.search || undefined,
     page: 1,
-    pageSize: PAGE_SIZE,
-    sortBy: "uploadedAt",
+    pageSize: DIRECTORY_PAGE_SIZE,
+    sortBy: "createdAt",
     sortDir: "desc",
   });
-  const [showUpload, setShowUpload] = useState(false);
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  const { customers } = useCustomers();
+  const customersById = new Map(customers.map((c) => [c.id, c]));
 
-  const listParams: DocumentListParams =
-    view === "list" ? filters : { ...filters, page: 1, pageSize: WARRANTY_PAGE_SIZE, warrantyOnly: true };
-  const { status, error, result, refetch } = useDocuments(listParams);
+  // Document counts per contract, for the directory table — a single
+  // unfiltered, large-page fetch is simplest for a mock dataset this size;
+  // a real backend would return counts via the contract list endpoint
+  // itself rather than a second round trip. See docs/OPEN_QUESTIONS.md.
+  const { result: allDocumentsResult } = useDocuments({ page: 1, pageSize: 500 });
+  const documentCountsByContract = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const doc of allDocumentsResult?.items ?? []) {
+      counts.set(doc.contractId, (counts.get(doc.contractId) ?? 0) + 1);
+    }
+    return counts;
+  }, [allDocumentsResult]);
 
-  const handleSortChange = (key: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      sortBy: key as DocumentListParams["sortBy"],
-      sortDir: prev.sortBy === key && prev.sortDir === "asc" ? "desc" : "asc",
-    }));
-  };
+  const cities = useMemo(() => {
+    const set = new Set((contractsResult?.items ?? []).map((c) => c.city).filter(Boolean));
+    return [...set].sort();
+  }, [contractsResult]);
+
+  const filteredContracts = (contractsResult?.items ?? []).filter((c) => {
+    if (filters.city && c.city !== filters.city) return false;
+    if (filters.contractCategory && c.contractCategory !== filters.contractCategory) return false;
+    return true;
+  });
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold text-ink">Drawing & Document Management</h1>
-          <p className="text-sm text-ink-muted">Finalized drawings, layouts, certificates, and warranty documents by project.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex rounded-md border border-border p-0.5">
-            <Button variant={view === "list" ? "secondary" : "ghost"} size="sm" onClick={() => setView("list")} aria-pressed={view === "list"}>
-              <TableIcon className="h-4 w-4" aria-hidden />
-              All Documents
-            </Button>
-            <Button
-              variant={view === "warranty" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => setView("warranty")}
-              aria-pressed={view === "warranty"}
-            >
-              <LayoutGrid className="h-4 w-4" aria-hidden />
-              Warranty Mapping
-            </Button>
-          </div>
-          <PermissionGuard permission="documents:write">
-            <Button onClick={() => setShowUpload(true)}>
-              <Plus className="h-4 w-4" aria-hidden />
-              Upload Document
-            </Button>
-          </PermissionGuard>
-        </div>
+      <div>
+        <h1 className="font-heading text-2xl font-semibold text-ink">Drawing & Document Management</h1>
+        <p className="text-sm text-ink-muted">
+          Every contract that can hold documents. Open a contract to view, filter, and upload its drawings,
+          layouts, certificates, and warranty documents.
+        </p>
       </div>
 
-      <DocumentFilters value={filters} onChange={setFilters} />
+      <ContractDirectoryFilters value={filters} cities={cities} onChange={setFilters} />
 
-      {status === "loading" && (
+      {contractsStatus === "loading" && (
         <div className="flex flex-col gap-3">
           <LoadingSkeleton className="h-10 w-full" />
           <LoadingSkeleton className="h-64 w-full" />
         </div>
       )}
 
-      {status === "error" && <ErrorState title="Could not load documents" description={error ?? undefined} onRetry={refetch} />}
-
-      {status === "success" && result && result.items.length === 0 && view === "list" && (
-        <EmptyState title="No documents match these filters" description="Try clearing a filter, or upload a new document." />
+      {contractsStatus === "error" && (
+        <ErrorState title="Could not load contracts" description={contractsError ?? undefined} onRetry={refetch} />
       )}
 
-      {status === "success" && result && result.items.length > 0 && view === "list" && (
-        <>
-          <DocumentTable
-            documents={result.items}
-            sortBy={filters.sortBy}
-            sortDir={filters.sortDir}
-            onSortChange={handleSortChange}
-            onView={(doc: Document) => setPreviewId(doc.id)}
-          />
-          <Pagination
-            page={result.page}
-            pageSize={result.pageSize}
-            total={result.total}
-            onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
-          />
-        </>
+      {contractsStatus === "success" && filteredContracts.length === 0 && (
+        <EmptyState title="No contracts match these filters" description="Try clearing a filter, or create a contract in Contract Management first." />
       )}
 
-      {status === "success" && result && view === "warranty" && (
-        <DocumentWarrantyMapping documents={result.items} onView={(doc) => setPreviewId(doc.id)} />
-      )}
-
-      <Dialog open={showUpload} onClose={() => setShowUpload(false)} title="Upload Document" description="Metadata is required; the file itself is optional for this demo.">
-        <DocumentUploadForm
-          onCancel={() => setShowUpload(false)}
-          onSuccess={() => {
-            setShowUpload(false);
-            refetch();
-          }}
+      {contractsStatus === "success" && filteredContracts.length > 0 && (
+        <ContractDirectoryTable
+          contracts={filteredContracts}
+          customersById={customersById}
+          documentCountsByContract={documentCountsByContract}
+          onView={(contract) => router.push(`${ADMIN_ROUTES.documents}/${contract.id}`)}
         />
-      </Dialog>
-
-      <DocumentPreviewPanel documentId={previewId} perspective="admin" onClose={() => setPreviewId(null)} />
+      )}
     </div>
   );
 }

@@ -13,14 +13,13 @@ import { FormField } from "@/components/ui/form-field";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/components/providers/auth-provider";
 import { useCreateDocument } from "@/hooks/use-documents";
-import { useProjects } from "@/hooks/use-projects";
 import { DOCUMENT_CATEGORY_CONFIG, DOCUMENT_CATEGORY_ORDER } from "@/components/documents/document-category-config";
+import type { Contract } from "@/types/domain/contract";
 import type { Document, DocumentCategory } from "@/types/domain/document";
 
 const uploadSchema = z.object({
   title: z.string().min(3, "Add a title"),
   category: z.enum(["finalized_drawing", "layout_2d", "layout_3d", "material_test_certificate", "warranty_tax_invoice", "warranted_goods_certificate"]),
-  projectId: z.string().min(1, "Select a project"),
   visibleToCustomer: z.boolean(),
   warrantyItem: z.string().optional(),
   warrantyExpiresAt: z.string().optional(),
@@ -31,26 +30,31 @@ type UploadFormValues = z.infer<typeof uploadSchema>;
 const WARRANTY_CATEGORIES: DocumentCategory[] = ["warranty_tax_invoice", "warranted_goods_certificate"];
 
 /**
- * Upload UI for the admin Drawing & Document Management module. Accepts a
- * real file via the browser File API — since there's no backend/storage
- * yet (see docs/OPEN_QUESTIONS.md #8), the file's bytes are kept only as an
- * in-memory object URL for this session (`DocumentsAdapter.getPreviewUrl`),
- * not persisted, so Preview/Download work for what you just uploaded but
- * not after a reload. Choosing a file is optional — metadata-only demo
- * records are also allowed, matching every seeded document.
+ * Upload UI for the admin Drawing & Document Management module. Owner
+ * correction #1/#3: there is no project/category-first entry point anymore
+ * — this form is only ever opened from a specific contract's page
+ * (`/admin/documents/[contractId]`), so `contract` is required and the
+ * project picker is gone; the only thing still chosen here is the document
+ * *type* (category), which correction #3 explicitly keeps ("give the
+ * necessary option to upload the type of document against the respective
+ * contract"). Accepts a real file via the browser File API — since there's
+ * no backend/storage yet (see docs/OPEN_QUESTIONS.md #8), the file's bytes
+ * are kept only as an in-memory object URL for this session
+ * (`DocumentsAdapter.getPreviewUrl`), not persisted. Choosing a file is
+ * optional — metadata-only demo records are also allowed, matching every
+ * seeded document.
  */
 export function DocumentUploadForm({
+  contract,
   onSuccess,
   onCancel,
-  defaultProjectId,
 }: {
+  contract: Contract;
   onSuccess: (document: Document) => void;
   onCancel: () => void;
-  defaultProjectId?: string;
 }) {
   const { session } = useSession();
   const { submit, status, error } = useCreateDocument();
-  const { projects: allProjects } = useProjects();
   const [file, setFile] = useState<File | null>(null);
 
   const {
@@ -63,7 +67,6 @@ export function DocumentUploadForm({
     defaultValues: {
       title: "",
       category: "finalized_drawing",
-      projectId: defaultProjectId ?? "",
       visibleToCustomer: false,
       warrantyItem: "",
       warrantyExpiresAt: "",
@@ -79,7 +82,8 @@ export function DocumentUploadForm({
       {
         title: values.title,
         category: values.category,
-        projectId: values.projectId,
+        contractId: contract.id,
+        projectId: contract.projectId,
         fileName: file?.name ?? `${values.title.replace(/\s+/g, "-").toLowerCase()}.pdf`,
         fileType: file?.type || "application/pdf",
         fileSizeBytes: file?.size ?? 0,
@@ -97,31 +101,23 @@ export function DocumentUploadForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+      <p className="rounded-md border border-border bg-surface-muted px-3 py-2 text-xs text-ink-muted">
+        Uploading against <span className="font-medium text-ink">{contract.contractNumber}</span> — {contract.title}
+      </p>
+
       <FormField label="Title" htmlFor="doc-title" required error={errors.title?.message}>
         <Input id="doc-title" invalid={!!errors.title} {...register("title")} />
       </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Category" htmlFor="doc-category" required error={errors.category?.message}>
-          <Select id="doc-category" {...register("category")}>
-            {DOCUMENT_CATEGORY_ORDER.map((cat) => (
-              <option key={cat} value={cat}>
-                {DOCUMENT_CATEGORY_CONFIG[cat].label}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-        <FormField label="Project" htmlFor="doc-project" required error={errors.projectId?.message}>
-          <Select id="doc-project" invalid={!!errors.projectId} {...register("projectId")}>
-            <option value="">Select a project…</option>
-            {allProjects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-        </FormField>
-      </div>
+      <FormField label="Type of Document" htmlFor="doc-category" required error={errors.category?.message}>
+        <Select id="doc-category" {...register("category")}>
+          {DOCUMENT_CATEGORY_ORDER.map((cat) => (
+            <option key={cat} value={cat}>
+              {DOCUMENT_CATEGORY_CONFIG[cat].label}
+            </option>
+          ))}
+        </Select>
+      </FormField>
 
       {isWarrantyCategory && (
         <div className="grid gap-4 rounded-card border border-border p-3 sm:grid-cols-2">

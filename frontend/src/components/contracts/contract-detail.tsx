@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { Download, Paperclip } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/domain/status-badge";
 import { ErrorState } from "@/components/domain/error-state";
@@ -12,11 +13,14 @@ import { ConfirmationDialog } from "@/components/domain/confirmation-dialog";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useSession } from "@/components/providers/auth-provider";
 import { useContract, useRespondToContract, useSendContractForAcceptance, useWithdrawContract } from "@/hooks/use-contracts";
+import { contractsAdapter } from "@/lib/api/adapters/contracts-adapter";
 import { ContractStatusTimeline } from "@/components/contracts/contract-status-timeline";
 import { ContractLineItemsTable } from "@/components/contracts/contract-line-items-table";
 import { ContractAuditHistory } from "@/components/contracts/contract-audit-history";
 import { CONTRACT_STATUS_CONFIG } from "@/components/contracts/contract-status-config";
-import { formatDateTime } from "@/lib/utils/format";
+import { CONTRACT_CATEGORY_TYPE_CONFIG } from "@/components/contracts/contract-category-type-config";
+import { CONSTRUCTION_PACKAGES } from "@/lib/content/public-site";
+import { formatBytes, formatDate, formatDateTime } from "@/lib/utils/format";
 import type { Customer } from "@/types/domain/customer";
 
 /**
@@ -116,7 +120,11 @@ export function ContractDetail({
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">{contract.contractNumber}</p>
           <h2 className="font-heading text-xl font-semibold text-ink">{contract.title}</h2>
-          {customer && <p className="text-sm text-ink-muted">{customer.name}</p>}
+          <p className="text-sm text-ink-muted">
+            {contract.city}
+            {contract.state ? `, ${contract.state}` : ""}
+            {customer && ` · ${customer.name}`}
+          </p>
         </div>
         <StatusBadge status={contract.status} config={CONTRACT_STATUS_CONFIG} />
       </div>
@@ -213,6 +221,42 @@ export function ContractDetail({
         </div>
       )}
 
+      <div className="rounded-card border border-border p-4">
+        <h3 className="font-heading text-sm font-semibold text-ink">{CONTRACT_CATEGORY_TYPE_CONFIG[contract.contractCategory].label}</h3>
+        {contract.contractCategory === "ihb" && contract.packageCriteria && (
+          <p className="mt-1 text-sm text-ink-muted">
+            Package: {CONSTRUCTION_PACKAGES.find((p) => p.slug === contract.packageCriteria)?.name ?? contract.packageCriteria}
+          </p>
+        )}
+        {contract.contractCategory === "large_construction" && contract.servicesDescription && (
+          <p className="mt-1 whitespace-pre-wrap text-sm text-ink-muted">{contract.servicesDescription}</p>
+        )}
+      </div>
+
+      {contract.attachment && (
+        <div className="flex items-center justify-between gap-3 rounded-card border border-border p-3">
+          <p className="flex items-center gap-2 text-sm text-ink">
+            <Paperclip className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
+            {contract.attachment.fileName}
+            <span className="text-xs text-ink-muted">({formatBytes(contract.attachment.fileSizeBytes)})</span>
+          </p>
+          {(() => {
+            const url = contractsAdapter.getAttachmentPreviewUrl(contract.id);
+            return url ? (
+              <a href={url} download={contract.attachment.fileName} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <Download className="h-4 w-4" aria-hidden />
+                Download
+              </a>
+            ) : (
+              <Button variant="outline" size="sm" disabled>
+                <Download className="h-4 w-4" aria-hidden />
+                Download
+              </Button>
+            );
+          })()}
+        </div>
+      )}
+
       <div>
         <h3 className="mb-3 font-heading text-sm font-semibold text-ink">Line Items</h3>
         <ContractLineItemsTable lineItems={contract.lineItems} />
@@ -226,6 +270,10 @@ export function ContractDetail({
       )}
 
       <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+        <div>
+          <dt className="text-xs text-ink-muted">Date of Contract</dt>
+          <dd className="text-ink">{contract.contractDate ? formatDate(contract.contractDate) : "—"}</dd>
+        </div>
         <div>
           <dt className="text-xs text-ink-muted">Created</dt>
           <dd className="text-ink">{formatDateTime(contract.createdAt)}</dd>

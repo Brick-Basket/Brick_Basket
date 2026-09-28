@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 export default function PortfolioPage() {
   return (
     <>
-      <PageBanner title="Our Projects" current="Projects" />
+      <PageBanner pageKey="portfolio" />
       <section className="container py-16 md:py-20">
         <PortfolioGrid projects={CONFIRMED_PROJECTS} />
       </section>

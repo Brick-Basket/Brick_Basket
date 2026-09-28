@@ -23,6 +23,16 @@ export interface LeadListParams {
   source?: string;
   status?: string;
   assignedTo?: string;
+  /**
+   * Dedicated city filter — owner correction #5's follow-up comment ("in
+   * searchbar, city selection option should be there to easily access all
+   * the cities"). Distinct from `search` (which also matches city as one of
+   * several free-text fields): this one is driven by `CityAutocomplete` in
+   * `LeadFilters` so staff can pick straight from the full Indian city list
+   * instead of typing a whole name. Matches case-insensitively and by
+   * partial text, so it narrows results as the picker's own suggestions do.
+   */
+  city?: string;
   sortBy?: "createdAt" | "updatedAt" | "name" | "status";
   sortDir?: "asc" | "desc";
   page?: number;
@@ -67,11 +77,16 @@ class MockLeadsAdapter implements LeadsAdapter {
           l.name.toLowerCase().includes(q) ||
           l.email.toLowerCase().includes(q) ||
           l.phone.toLowerCase().includes(q) ||
-          l.subject.toLowerCase().includes(q),
+          l.subject.toLowerCase().includes(q) ||
+          l.city.toLowerCase().includes(q),
       );
     }
     if (params.source) items = items.filter((l) => l.source === params.source);
     if (params.status) items = items.filter((l) => l.status === params.status);
+    if (params.city) {
+      const cq = params.city.trim().toLowerCase();
+      items = items.filter((l) => l.city.toLowerCase().includes(cq));
+    }
     if (params.assignedTo) {
       items = items.filter((l) =>
         params.assignedTo === "unassigned" ? l.assignedTo === null : l.assignedTo === params.assignedTo,
@@ -110,6 +125,11 @@ class MockLeadsAdapter implements LeadsAdapter {
       assignedTo: null,
       createdAt: now,
       updatedAt: now,
+      // Defaults for callers that don't supply these (the public Contact
+      // form/Cost Estimator — see CreateLeadInput's doc comment); the admin
+      // "New Lead" form always supplies both explicitly.
+      city: input.city ?? "",
+      receivedDate: input.receivedDate ?? now.slice(0, 10),
       ...input,
     };
     this.leads = [lead, ...this.leads];

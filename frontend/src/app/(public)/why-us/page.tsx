@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageBanner } from "@/components/marketing/page-banner";
 import { WhyUsSection } from "@/components/marketing/sections/why-us-section";
+import { ComparisonSection } from "@/components/marketing/sections/comparison-section";
 
 export const metadata: Metadata = {
   title: "Why BrickBasket",
@@ -11,8 +12,9 @@ export const metadata: Metadata = {
 export default function WhyUsPage() {
   return (
     <>
-      <PageBanner title="Why Choose BrickBasket?" current="Why Us" />
+      <PageBanner pageKey="whyUs" />
       <WhyUsSection />
+      <ComparisonSection className="bg-surface-muted" showHeading />
     </>
   );
 }

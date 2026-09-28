@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableColumn } from "@/components/domain/data-table";
 import { DOCUMENT_CATEGORY_CONFIG } from "@/components/documents/document-category-config";
 import { formatBytes, formatDate } from "@/lib/utils/format";
-import { useProjects } from "@/hooks/use-projects";
 import type { Document } from "@/types/domain/document";
 
+/** The former "Project" column was dropped — every list this renders is already scoped to one contract (owner correction #3), so it was always the same value on every row. */
 export function DocumentTable({
   documents,
   sortBy,
@@ -20,7 +20,6 @@ export function DocumentTable({
   onSortChange: (key: string) => void;
   onView: (document: Document) => void;
 }) {
-  const { projects: allProjects } = useProjects();
   const columns: DataTableColumn<Document>[] = [
     {
       key: "title",
@@ -40,11 +39,6 @@ export function DocumentTable({
       header: "Category",
       sortKey: "category",
       render: (d) => DOCUMENT_CATEGORY_CONFIG[d.category].label,
-    },
-    {
-      key: "project",
-      header: "Project",
-      render: (d) => allProjects.find((p) => p.id === d.projectId)?.name ?? "—",
     },
     {
       key: "visibility",

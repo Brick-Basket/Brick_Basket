@@ -1,6 +1,9 @@
-import type { ReactNode } from "react";
+"use client";
+
 import { MessageSquare, MapPin, Compass, ClipboardList, HardHat, KeyRound } from "lucide-react";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { useLanguage } from "@/components/providers/language-provider";
+import { HOW_IT_WORKS_STEPS_HI } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils/cn";
 
 // A sensible process narrative built from the already-confirmed service
@@ -60,30 +63,35 @@ const STEPS = [
 export function HowItWorksSection({
   id,
   className,
-  heading,
+  showHeading,
 }: {
   id?: string;
   className?: string;
   /** Shown above the steps — omit on the standalone page, which uses PageBanner instead. */
-  heading?: { eyebrow?: string; title: ReactNode };
+  showHeading?: boolean;
 }) {
+  const { lang, t } = useLanguage();
+
   return (
     <section id={id} className={cn("container py-16 md:py-20", className)}>
-      {heading && <SectionHeading eyebrow={heading.eyebrow} title={heading.title} />}
+      {showHeading && <SectionHeading eyebrow={t("howItWorks.headingEyebrow")} title={t("howItWorks.headingTitle")} />}
 
       <ol className="relative mt-12 grid gap-10 md:grid-cols-3">
         {STEPS.map((step, i) => {
           const Icon = step.icon;
+          const tr = HOW_IT_WORKS_STEPS_HI[step.title];
+          const title = lang === "hi" && tr ? tr.title : step.title;
+          const description = lang === "hi" && tr ? tr.description : step.description;
           return (
             <li key={step.title} className="relative flex flex-col items-center text-center">
               <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-red text-white">
                 <Icon className="h-6 w-6" aria-hidden />
               </span>
               <span className="mt-3 text-xs font-semibold uppercase tracking-wide text-brand-red">
-                Step {i + 1}
+                {t("howItWorks.step")} {i + 1}
               </span>
-              <h3 className="mt-1 font-heading text-base font-semibold text-ink">{step.title}</h3>
-              <p className="mt-2 max-w-xs text-sm text-ink-muted">{step.description}</p>
+              <h3 className="mt-1 font-heading text-base font-semibold text-ink">{title}</h3>
+              <p className="mt-2 max-w-xs text-sm text-ink-muted">{description}</p>
             </li>
           );
         })}

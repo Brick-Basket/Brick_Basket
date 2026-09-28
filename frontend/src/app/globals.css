@@ -46,12 +46,13 @@
 
   /*
    * Primary Font per the brand guide is "Super Wonder" (logo wordmark,
-   * headlines, hero banners) — a licensed display font not available via
-   * Google Fonts/next/font. Until the client supplies the licensed font
-   * files, headings fall back to Baloo 2 (a free, similarly bold/rounded/
-   * friendly geometric display face) — see docs/BRAND_GUIDELINES.md and
-   * docs/OPEN_QUESTIONS.md. Secondary Font "Poppins" is the confirmed body
-   * font and loads for real via next/font/google.
+   * headlines, hero banners) — a licensed display font. The client did
+   * supply the real file and it was wired in briefly (self-hosted via
+   * next/font/local), but the owner asked to revert back to how headings
+   * looked before — so Baloo 2 (--font-heading-fallback, loaded in
+   * layout.tsx) is back to being the actual rendered heading font, not a
+   * fallback. See docs/OPEN_QUESTIONS.md #13. Secondary Font "Poppins" is
+   * the confirmed body font and loads for real via next/font/google.
    */
   --font-sans: var(--font-poppins), system-ui, sans-serif;
   --font-heading: var(--font-heading-fallback), var(--font-poppins), system-ui, sans-serif;
@@ -83,4 +84,56 @@ body {
 :focus-visible {
   outline: 2px solid rgb(var(--brand-red));
   outline-offset: 2px;
+}
+
+/*
+ * SCOPED PRINT (owner correction: "in the save/print estimate section, only
+ * the required/designated print section should include, not the whole
+ * app/website"). `window.print()`'s default behavior is to print whatever
+ * page it's called from top to bottom — for the Cost Estimator's "Save /
+ * Print This Estimate" button (`cost-estimator-section.tsx`) that used to
+ * mean the entire marketing site (header, every other section, footer),
+ * exactly the bug reported. This is the standard "print only one region"
+ * technique: hide every element on the page for print media, then re-show
+ * only the one element marked `.print-scope` (and everything inside it),
+ * repositioned to the top of the printed page regardless of where it sat on
+ * screen. `.print-scope-active` is toggled onto `<body>` only for the
+ * moment of printing (see `usePrintScope`, src/hooks/use-print-scope.ts),
+ * so it never touches normal screen rendering, and an ordinary Ctrl+P /
+ * right-click "Print" anywhere else on the site is completely unaffected —
+ * only the button-triggered print of the estimate is scoped this way.
+ */
+@media print {
+  body.print-scope-active * {
+    visibility: hidden;
+  }
+  body.print-scope-active .print-scope,
+  body.print-scope-active .print-scope * {
+    visibility: visible;
+  }
+  body.print-scope-active .print-scope {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+
+/*
+ * A print-only summary block (e.g. the Cost Estimator's printable result
+ * card, `cost-estimator-section.tsx`) stays out of the page entirely on
+ * screen — `display: none` unconditionally, never a Tailwind `print:block`
+ * pairing, so it can never flash visible on screen for the instant
+ * `print-scope-active` is toggled just before `window.print()` is called —
+ * and is only ever revealed for the one scoped print that explicitly marks
+ * it via `.print-scope` (see `usePrintScope`, src/hooks/use-print-scope.ts),
+ * never for an ordinary Ctrl+P / right-click "Print" elsewhere on the site.
+ */
+.print-scope-summary {
+  display: none;
+}
+@media print {
+  body.print-scope-active .print-scope-summary {
+    display: block;
+  }
 }

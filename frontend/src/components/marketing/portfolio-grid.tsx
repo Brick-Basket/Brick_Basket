@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ImagePlaceholder } from "@/components/marketing/image-placeholder";
+import { useLanguage } from "@/components/providers/language-provider";
+import { localize, PROJECT_FILTER_HI, PROJECT_TITLE_HI } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils/cn";
 
 export interface PortfolioProject {
@@ -24,13 +26,14 @@ const FILTERS = ["All Projects", "Commercial", "Residential", "Interior", "Ongoi
  */
 export function PortfolioGrid({ projects }: { projects: PortfolioProject[] }) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All Projects");
+  const { lang, t } = useLanguage();
 
   const visible =
     filter === "All Projects" ? projects : projects.filter((p) => p.category === filter);
 
   return (
     <div>
-      <div className="flex flex-wrap justify-center gap-2" role="tablist" aria-label="Filter projects">
+      <div className="flex flex-wrap justify-center gap-2" role="tablist" aria-label={t("projects.filterAria")}>
         {FILTERS.map((f) => (
           <button
             key={f}
@@ -45,15 +48,13 @@ export function PortfolioGrid({ projects }: { projects: PortfolioProject[] }) {
                 : "border-border bg-surface text-ink hover:bg-surface-muted",
             )}
           >
-            {f}
+            {localize(lang, f, PROJECT_FILTER_HI)}
           </button>
         ))}
       </div>
 
       {visible.length === 0 ? (
-        <p className="mt-10 text-center text-sm text-ink-muted">
-          No projects in this category yet.
-        </p>
+        <p className="mt-10 text-center text-sm text-ink-muted">{t("projects.noProjects")}</p>
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {visible.map((project) => (
@@ -65,8 +66,10 @@ export function PortfolioGrid({ projects }: { projects: PortfolioProject[] }) {
               />
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-heading text-sm font-semibold text-ink">{project.title}</h3>
-                  <Badge variant="brand">{project.category}</Badge>
+                  <h3 className="font-heading text-sm font-semibold text-ink">
+                    {localize(lang, project.title, PROJECT_TITLE_HI)}
+                  </h3>
+                  <Badge variant="brand">{localize(lang, project.category, PROJECT_FILTER_HI)}</Badge>
                 </div>
                 <p className="mt-1 text-xs text-ink-muted">{project.location}</p>
               </div>

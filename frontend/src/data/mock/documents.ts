@@ -8,12 +8,22 @@ import type { Document } from "@/types/domain/document";
  * `DocumentPreviewModal`) since only files uploaded during this session
  * (via the browser's File API) have anything real to show. Covers every
  * category, mixed customer visibility, and one multi-version document.
+ *
+ * `contractId` added on every record (owner correction — documents are now
+ * scoped by contract, not project). `projectId` is kept as the denormalized
+ * copy of that contract's own `projectId` — see `Document`'s header
+ * comment. Luxury Villa's three contracts (`contract_1`/`2`/`3`) all route
+ * their documents to `contract_1`, the main design-build construction
+ * contract, since none of these six documents are specific to the
+ * Interior Fit-Out or Landscaping contracts — a FRONTEND IMPLEMENTATION
+ * DECISION, see docs/OPEN_QUESTIONS.md.
  */
 export const mockDocuments: Document[] = [
   {
     id: "doc_1",
     title: "Luxury Villa — Finalized Structural Drawing",
     category: "finalized_drawing",
+    contractId: "contract_1",
     projectId: "proj_luxury_villa",
     fileName: "villa-structural-final-v2.pdf",
     fileType: "application/pdf",
@@ -29,6 +39,7 @@ export const mockDocuments: Document[] = [
     id: "doc_2",
     title: "Luxury Villa — Ground Floor 2D Layout",
     category: "layout_2d",
+    contractId: "contract_1",
     projectId: "proj_luxury_villa",
     fileName: "villa-ground-floor-2d.pdf",
     fileType: "application/pdf",
@@ -44,6 +55,7 @@ export const mockDocuments: Document[] = [
     id: "doc_3",
     title: "Luxury Villa — Exterior 3D Render",
     category: "layout_3d",
+    contractId: "contract_1",
     projectId: "proj_luxury_villa",
     fileName: "villa-exterior-3d.png",
     fileType: "image/png",
@@ -59,6 +71,7 @@ export const mockDocuments: Document[] = [
     id: "doc_4",
     title: "Luxury Villa — TMT Steel Test Certificate",
     category: "material_test_certificate",
+    contractId: "contract_1",
     projectId: "proj_luxury_villa",
     fileName: "tmt-steel-test-cert.pdf",
     fileType: "application/pdf",
@@ -74,6 +87,7 @@ export const mockDocuments: Document[] = [
     id: "doc_5",
     title: "Luxury Villa — Sanitary Fixtures Warranty Invoice",
     category: "warranty_tax_invoice",
+    contractId: "contract_1",
     projectId: "proj_luxury_villa",
     fileName: "sanitary-fixtures-warranty-invoice.pdf",
     fileType: "application/pdf",
@@ -91,6 +105,7 @@ export const mockDocuments: Document[] = [
     id: "doc_6",
     title: "Luxury Villa — Solar Water Heater Warranty Certificate",
     category: "warranted_goods_certificate",
+    contractId: "contract_1",
     projectId: "proj_luxury_villa",
     fileName: "solar-water-heater-warranty-cert.pdf",
     fileType: "application/pdf",
@@ -108,6 +123,7 @@ export const mockDocuments: Document[] = [
     id: "doc_7",
     title: "Commercial Complex — Finalized Civil Drawing",
     category: "finalized_drawing",
+    contractId: "contract_7",
     projectId: "proj_commercial_complex",
     fileName: "commercial-civil-final.pdf",
     fileType: "application/pdf",
@@ -123,6 +139,7 @@ export const mockDocuments: Document[] = [
     id: "doc_8",
     title: "Commercial Complex — Electrical Cable Test Certificate",
     category: "material_test_certificate",
+    contractId: "contract_7",
     projectId: "proj_commercial_complex",
     fileName: "electrical-cable-test-cert.pdf",
     fileType: "application/pdf",
@@ -138,6 +155,7 @@ export const mockDocuments: Document[] = [
     id: "doc_9",
     title: "Modern Residence — 3D Interior Walkthrough Render",
     category: "layout_3d",
+    contractId: "contract_8",
     projectId: "proj_modern_residence",
     fileName: "modern-residence-interior-3d.png",
     fileType: "image/png",
@@ -153,6 +171,7 @@ export const mockDocuments: Document[] = [
     id: "doc_10",
     title: "Modern Residence — Fixtures Warranty Invoice",
     category: "warranty_tax_invoice",
+    contractId: "contract_8",
     projectId: "proj_modern_residence",
     fileName: "modern-residence-fixtures-warranty.pdf",
     fileType: "application/pdf",

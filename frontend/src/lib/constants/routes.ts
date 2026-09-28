@@ -22,6 +22,7 @@ export const PORTAL_ROUTES = {
   projects: "/dashboard/projects",
   contracts: "/dashboard/contracts",
   documents: "/dashboard/documents",
+  siteUpdates: "/dashboard/site-updates",
   mrc: "/dashboard/mrc",
   payments: "/dashboard/payments",
   notifications: "/dashboard/notifications",
@@ -45,6 +46,7 @@ export const ADMIN_ROUTES = {
   storeRequisitions: "/admin/stores/requisitions",
   schedule: "/admin/project-management/schedule",
   dpr: "/admin/project-management/dpr",
+  siteUpdates: "/admin/project-management/site-updates",
   projectCost: "/admin/finance/project-cost",
   payments: "/admin/finance/payments",
   bankCash: "/admin/finance/bank-cash",
@@ -53,6 +55,7 @@ export const ADMIN_ROUTES = {
   gstr: "/admin/finance/gstr",
   costToComplete: "/admin/finance/cost-to-complete",
   costManagement: "/admin/cost-management",
+  pricingContent: "/admin/pricing-content",
 } as const;
 
 // FRONTEND IMPLEMENTATION DECISION (one-page site pass): the Home page is
@@ -69,6 +72,7 @@ export const MAIN_NAV: { label: string; href: string }[] = [
   { label: "About Us", href: "/#about" },
   { label: "Services", href: "/#services" },
   { label: "How It Works", href: "/#how-it-works" },
+  { label: "Cost Estimator", href: "/#cost-estimator" },
   { label: "Projects", href: "/#projects" },
   { label: "Why Us", href: "/#why-us" },
   { label: "FAQ", href: "/#faq" },

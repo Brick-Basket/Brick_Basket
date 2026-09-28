@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function ContactPage() {
   return (
     <>
-      <PageBanner title="Contact Us" current="Contact" />
+      <PageBanner pageKey="contact" />
       <ContactSection />
     </>
   );

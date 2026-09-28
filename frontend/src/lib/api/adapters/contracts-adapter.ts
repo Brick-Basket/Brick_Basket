@@ -45,12 +45,14 @@ export interface ContractActor {
 export interface ContractsAdapter {
   list(params?: ContractListParams): Promise<ContractListResult>;
   get(id: string): Promise<Contract | null>;
-  create(input: CreateContractInput, actor: ContractActor): Promise<Contract>;
-  update(id: string, patch: UpdateContractInput, actor: ContractActor): Promise<Contract>;
+  create(input: CreateContractInput, file: File | null, actor: ContractActor): Promise<Contract>;
+  update(id: string, patch: UpdateContractInput, file: File | null | undefined, actor: ContractActor): Promise<Contract>;
   sendForAcceptance(id: string, actor: ContractActor): Promise<Contract>;
   withdraw(id: string, actor: ContractActor): Promise<Contract>;
   respond(id: string, decision: "accepted" | "declined", actor: ContractActor, declineReason?: string): Promise<Contract>;
   listAuditHistory(contractId: string): Promise<ContractAuditEntry[]>;
+  /** Mock-only, session-lived object URL for an uploaded "contract format" attachment — same convention as `DocumentsAdapter.getPreviewUrl`. Never part of the real backend contract. */
+  getAttachmentPreviewUrl(contractId: string): string | null;
 }
 
 /**
@@ -61,6 +63,26 @@ export interface ContractsAdapter {
 class MockContractsAdapter implements ContractsAdapter {
   private contracts: Contract[] = [...mockContracts];
   private audit: ContractAuditEntry[] = [...mockContractAudit];
+  private objectUrls = new Map<string, string>();
+
+  /**
+   * FRONTEND IMPLEMENTATION DECISION (owner correction #1 — "Contract
+   * reference number should be written as BB/State name/City Name/year/00001"):
+   * the 5-digit sequence is scoped per state+city+financial-year, matching
+   * how Indian branch/office reference numbers conventionally reset each
+   * year rather than counting up forever across the whole company. Not
+   * owner-confirmed either way — see docs/OPEN_QUESTIONS.md.
+   */
+  private generateContractNumber(state: string, city: string): string {
+    const year = new Date().getFullYear();
+    const stateSlug = state.replace(/\s+/g, "");
+    const citySlug = city.replace(/\s+/g, "");
+    const existingForScope = this.contracts.filter(
+      (c) => c.state === state && c.city === city && new Date(c.createdAt).getFullYear() === year,
+    ).length;
+    const sequence = String(existingForScope + 1).padStart(5, "0");
+    return `BB/${stateSlug}/${citySlug}/${year}/${sequence}`;
+  }
 
   async list(params: ContractListParams = {}): Promise<ContractListResult> {
     await delay(300);
@@ -71,7 +93,11 @@ class MockContractsAdapter implements ContractsAdapter {
     if (params.search) {
       const q = params.search.trim().toLowerCase();
       items = items.filter(
-        (c) => c.title.toLowerCase().includes(q) || c.contractNumber.toLowerCase().includes(q),
+        (c) =>
+          c.title.toLowerCase().includes(q) ||
+          c.contractNumber.toLowerCase().includes(q) ||
+          c.city.toLowerCase().includes(q) ||
+          c.state.toLowerCase().includes(q),
       );
     }
 
@@ -96,16 +122,23 @@ class MockContractsAdapter implements ContractsAdapter {
     return this.contracts.find((c) => c.id === id) ?? null;
   }
 
-  async create(input: CreateContractInput, actor: ContractActor): Promise<Contract> {
+  async create(input: CreateContractInput, file: File | null, actor: ContractActor): Promise<Contract> {
     await delay(500);
     const now = new Date().toISOString();
     const contract: Contract = {
       id: `contract_${Math.random().toString(36).slice(2, 10)}`,
-      contractNumber: `BB-CNT-${new Date().getFullYear()}-${String(this.contracts.length + 1).padStart(3, "0")}`,
+      contractNumber: this.generateContractNumber(input.state, input.city),
       title: input.title,
       customerId: input.customerId,
       leadId: input.leadId,
       projectId: input.projectId,
+      city: input.city,
+      state: input.state,
+      contractCategory: input.contractCategory,
+      servicesDescription: input.contractCategory === "large_construction" ? input.servicesDescription : undefined,
+      packageCriteria: input.contractCategory === "ihb" ? input.packageCriteria : undefined,
+      attachment: file ? { fileName: file.name, fileType: file.type, fileSizeBytes: file.size } : undefined,
+      contractDate: input.contractDate,
       status: "draft",
       lineItems: input.lineItems.map((li) => ({ ...li, id: `li_${Math.random().toString(36).slice(2, 10)}` })),
       notes: input.notes,
@@ -116,11 +149,12 @@ class MockContractsAdapter implements ContractsAdapter {
       updatedAt: now,
     };
     this.contracts = [contract, ...this.contracts];
+    if (file) this.objectUrls.set(contract.id, URL.createObjectURL(file));
     this.pushAudit(contract.id, "created", "Contract created.", actor);
     return contract;
   }
 
-  async update(id: string, patch: UpdateContractInput, actor: ContractActor): Promise<Contract> {
+  async update(id: string, patch: UpdateContractInput, file: File | null | undefined, actor: ContractActor): Promise<Contract> {
     await delay(400);
     const contract = this.mustFind(id);
     if (contract.status !== "draft" && contract.status !== "declined") {
@@ -131,9 +165,16 @@ class MockContractsAdapter implements ContractsAdapter {
     // DECISION (see contract.ts's header comment and docs/OPEN_QUESTIONS.md
     // #3), since the owner requirements don't define a revision workflow.
     const wasDeclined = contract.status === "declined";
+    const nextCategory = patch.contractCategory ?? contract.contractCategory;
     const updated: Contract = {
       ...contract,
       ...(patch.title !== undefined ? { title: patch.title } : {}),
+      ...(patch.city !== undefined ? { city: patch.city } : {}),
+      ...(patch.state !== undefined ? { state: patch.state } : {}),
+      ...(patch.contractCategory !== undefined ? { contractCategory: patch.contractCategory } : {}),
+      servicesDescription: nextCategory === "large_construction" ? patch.servicesDescription ?? contract.servicesDescription : undefined,
+      packageCriteria: nextCategory === "ihb" ? patch.packageCriteria ?? contract.packageCriteria : undefined,
+      ...(patch.contractDate !== undefined ? { contractDate: patch.contractDate } : {}),
       ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
       ...(patch.lineItems
         ? { lineItems: patch.lineItems.map((li) => ({ ...li, id: `li_${Math.random().toString(36).slice(2, 10)}` })) }
@@ -141,6 +182,12 @@ class MockContractsAdapter implements ContractsAdapter {
       ...(wasDeclined ? { status: "draft" as const, respondedAt: null, declineReason: null } : {}),
       updatedAt: new Date().toISOString(),
     };
+    if (file) {
+      const existing = this.objectUrls.get(id);
+      if (existing) URL.revokeObjectURL(existing);
+      this.objectUrls.set(id, URL.createObjectURL(file));
+      updated.attachment = { fileName: file.name, fileType: file.type, fileSizeBytes: file.size };
+    }
     this.replace(updated);
     this.pushAudit(
       id,
@@ -208,6 +255,10 @@ class MockContractsAdapter implements ContractsAdapter {
   async listAuditHistory(contractId: string): Promise<ContractAuditEntry[]> {
     await delay(250);
     return this.audit.filter((a) => a.contractId === contractId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  getAttachmentPreviewUrl(contractId: string): string | null {
+    return this.objectUrls.get(contractId) ?? null;
   }
 
   private mustFind(id: string): Contract {

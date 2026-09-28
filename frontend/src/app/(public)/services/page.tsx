@@ -5,7 +5,6 @@ import { PageBanner } from "@/components/marketing/page-banner";
 import { ServicesGrid } from "@/components/marketing/services-grid";
 import { buttonVariants } from "@/components/ui/button";
 import { PUBLIC_ROUTES } from "@/lib/constants/routes";
-import { CONFIRMED_SERVICES } from "@/lib/content/public-site";
 import { cn } from "@/lib/utils/cn";
 
 export const metadata: Metadata = {
@@ -17,7 +16,7 @@ export const metadata: Metadata = {
 export default function ServicesPage() {
   return (
     <>
-      <PageBanner title="Our Services" current="Services" />
+      <PageBanner pageKey="services" />
 
       <section className="container py-16 md:py-20">
         <p className="mx-auto max-w-2xl text-center text-lg font-medium text-ink">
@@ -25,7 +24,7 @@ export default function ServicesPage() {
         </p>
 
         <div className="mt-10">
-          <ServicesGrid services={CONFIRMED_SERVICES} />
+          <ServicesGrid />
         </div>
 
         {/* FRONTEND HARDENING (BrickBasket final hardening pass): a

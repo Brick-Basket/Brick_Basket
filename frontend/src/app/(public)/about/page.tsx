@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <>
-      <PageBanner title="About Us" current="About Us" />
+      <PageBanner pageKey="about" />
       <AboutSection />
     </>
   );

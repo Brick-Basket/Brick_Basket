@@ -5,18 +5,20 @@ import { StatusBadge } from "@/components/domain/status-badge";
 import { formatDate, formatINR } from "@/lib/utils/format";
 import { CONTRACT_STATUS_CONFIG } from "@/components/contracts/contract-status-config";
 import type { Contract } from "@/types/domain/contract";
-import type { Customer } from "@/types/domain/customer";
 
+/**
+ * `customersById` was dropped (owner correction #5 — "in place of customer
+ * name, city should reflect") since the table no longer renders a customer
+ * column. See `ContractDetail` for where the customer name still surfaces.
+ */
 export function ContractTable({
   contracts,
-  customersById,
   sortBy,
   sortDir,
   onSortChange,
   onView,
 }: {
   contracts: Contract[];
-  customersById: Map<string, Customer>;
   sortBy?: string;
   sortDir?: "asc" | "desc";
   onSortChange: (key: string) => void;
@@ -34,9 +36,9 @@ export function ContractTable({
       ),
     },
     {
-      key: "customer",
-      header: "Customer",
-      render: (c) => customersById.get(c.customerId)?.name ?? "—",
+      key: "city",
+      header: "City",
+      render: (c) => c.city || "—",
     },
     {
       key: "status",

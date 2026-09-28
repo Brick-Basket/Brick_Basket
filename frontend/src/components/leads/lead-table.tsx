@@ -37,9 +37,10 @@ export function LeadTable({
       ),
     },
     {
-      key: "subject",
-      header: "Subject",
-      render: (lead) => <span className="line-clamp-1">{lead.subject}</span>,
+      key: "city",
+      header: "City",
+      sortKey: "city",
+      render: (lead) => <span className="line-clamp-1">{lead.city || "—"}</span>,
     },
     {
       key: "source",
@@ -61,10 +62,13 @@ export function LeadTable({
       },
     },
     {
-      key: "createdAt",
-      header: "Received",
-      sortKey: "createdAt",
-      render: (lead) => new Date(lead.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+      key: "receivedDate",
+      header: "Date of Receipt",
+      sortKey: "receivedDate",
+      render: (lead) =>
+        lead.receivedDate
+          ? new Date(lead.receivedDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+          : "—",
     },
   ];
 

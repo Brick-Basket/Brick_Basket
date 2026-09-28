@@ -1,19 +1,27 @@
-import Link from "next/link";
 import type { Metadata } from "next";
-import { ArrowRight, Phone } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { ImagePlaceholder } from "@/components/marketing/image-placeholder";
-import { SectionHeading } from "@/components/marketing/section-heading";
 import { ServicesGrid } from "@/components/marketing/services-grid";
 import { PortfolioGrid } from "@/components/marketing/portfolio-grid";
-import { WatchVideoButton } from "@/components/marketing/watch-video-button";
 import { AboutSection } from "@/components/marketing/sections/about-section";
 import { HowItWorksSection } from "@/components/marketing/sections/how-it-works-section";
+import { CostEstimatorSection } from "@/components/marketing/sections/cost-estimator-section";
 import { WhyUsSection } from "@/components/marketing/sections/why-us-section";
+import { ComparisonSection } from "@/components/marketing/sections/comparison-section";
 import { FaqSection } from "@/components/marketing/sections/faq-section";
 import { ContactSection } from "@/components/marketing/sections/contact-section";
+import { HeroSection } from "@/components/marketing/sections/hero-section";
+import { ClosingCtaSection } from "@/components/marketing/sections/closing-cta-section";
+import { TranslatedSectionHeading } from "@/components/marketing/translated-section-heading";
 import { cn } from "@/lib/utils/cn";
-import { CONFIRMED_SERVICES, CONFIRMED_PROJECTS, INTRO_VIDEO } from "@/lib/content/public-site";
+import { CONFIRMED_PROJECTS } from "@/lib/content/public-site";
+
+// FRONTEND IMPLEMENTATION DECISION (Hindi language pass, docs/OPEN_QUESTIONS.md
+// #77): this page stays a Server Component (so `export const metadata` below
+// keeps working) — the pieces that needed `useLanguage()` (the Hero, the
+// Services/Projects headings, the Closing CTA) were pulled out into their
+// own small client components (`HeroSection`, `TranslatedSectionHeading`,
+// `ClosingCtaSection`) instead of converting this whole page to a client
+// component, matching the same "shared section component" pattern already
+// used for About/HowItWorks/WhyUs/Comparison/FAQ/Contact below.
 
 export const metadata: Metadata = {
   title: "Home",
@@ -84,111 +92,49 @@ export default function HomePage() {
   return (
     <>
       {/* Hero */}
-      <section id="home" className={cn("container grid gap-10 py-14 md:grid-cols-2 md:items-center md:py-20", FRAME_GRID)}>
-        <div>
-          <h1 className="font-heading text-4xl font-extrabold leading-tight text-ink md:text-5xl">
-            Building <span className="text-brand-red">Stronger Spaces</span> for a Better
-            Tomorrow
-          </h1>
-          <p className="mt-5 max-w-md text-ink-muted">
-            Premium construction and real estate solutions built on trust, transparency and
-            quality.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="#services" className={buttonVariants({ size: "lg" })}>
-              Explore Services <ArrowRight className="h-4 w-4" />
-            </Link>
-            <WatchVideoButton embedUrl={INTRO_VIDEO.embedUrl} />
-          </div>
-        </div>
-        <ImagePlaceholder
-          alt="BrickBasket project showcase"
-          src="/images/hero-building.jpg"
-          sizes="(max-width: 768px) 100vw, 50vw"
-          priority
-        />
-      </section>
+      <HeroSection id="home" className={cn("container grid gap-10 py-14 md:grid-cols-2 md:items-center md:py-20", FRAME_GRID)} />
 
       {/* About */}
       <AboutSection id="about" className={FRAME_GRID} />
 
       {/* Services */}
       <section id="services" className={cn("container py-16 md:py-20", FRAME_BLOCK)}>
-        <SectionHeading
-          eyebrow="Our Services"
-          title={
-            <>
-              Comprehensive <span className="text-brand-red">Solutions</span> for Every Need
-            </>
-          }
-        />
+        <TranslatedSectionHeading eyebrowKey="services.eyebrow" titleKey="services.title" />
         <div className="mt-10">
-          <ServicesGrid services={CONFIRMED_SERVICES} />
+          <ServicesGrid />
         </div>
       </section>
 
       {/* How It Works */}
-      <HowItWorksSection
-        id="how-it-works"
-        className={FRAME_BLOCK}
-        heading={{ eyebrow: "Our Process", title: "From Idea to Handover" }}
-      />
+      <HowItWorksSection id="how-it-works" className={FRAME_BLOCK} showHeading />
 
       {/* Projects */}
       <section id="projects" className={cn("bg-surface-muted py-16 md:py-20", FRAME_BLOCK)}>
         <div className="container">
-          <SectionHeading eyebrow="Our Work" title="Featured Projects" />
+          <TranslatedSectionHeading eyebrowKey="projects.eyebrow" titleKey="projects.title" />
           <div className="mt-10">
             <PortfolioGrid projects={CONFIRMED_PROJECTS} />
           </div>
         </div>
       </section>
 
+      {/* Cost Estimator */}
+      <CostEstimatorSection id="cost-estimator" className={FRAME_BLOCK} showHeading />
+
       {/* Why Us */}
-      <WhyUsSection
-        id="why-us"
-        className={FRAME_BLOCK}
-        heading={{
-          eyebrow: "Why BrickBasket",
-          title: "Why Choose BrickBasket?",
-        }}
-      />
+      <WhyUsSection id="why-us" className={FRAME_BLOCK} showHeading />
+
+      {/* The Traditional Way vs. The BrickBasket Way — see docs/CHANGELOG.md */}
+      <ComparisonSection className={cn("bg-surface-muted", FRAME_BLOCK)} showHeading />
 
       {/* FAQ */}
-      <FaqSection
-        id="faq"
-        className={FRAME_BLOCK}
-        heading={{
-          eyebrow: "Got Questions?",
-          title: "Frequently Asked Questions",
-        }}
-      />
+      <FaqSection id="faq" className={FRAME_BLOCK} showHeading />
 
       {/* Contact */}
       <ContactSection id="contact" className={SCROLL_OFFSET} />
 
       {/* Closing CTA */}
-      <section className="bg-brand-red text-white">
-        <div className="container flex flex-col items-center justify-between gap-6 py-12 md:flex-row">
-          <div>
-            <h2 className="font-heading text-2xl font-bold md:text-3xl">
-              Let&apos;s Build The Best In Class Together
-            </h2>
-            <p className="mt-1 text-white/85">Ready to start your next project?</p>
-          </div>
-          <div className="flex flex-col items-center gap-3 sm:flex-row">
-            <Link
-              href="#contact"
-              className={cn(buttonVariants({ size: "lg" }), "bg-white text-brand-red hover:bg-white/90")}
-            >
-              Get Consultation Now
-            </Link>
-            <span className="inline-flex items-center gap-2 text-sm text-white/90">
-              <Phone className="h-4 w-4" /> 9454516357, 8787200760
-            </span>
-          </div>
-        </div>
-      </section>
+      <ClosingCtaSection />
     </>
   );
 }

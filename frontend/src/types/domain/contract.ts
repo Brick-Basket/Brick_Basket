@@ -47,6 +47,31 @@ export type ContractCategory =
 // state machine.
 export type ContractStatus = "draft" | "sent_for_acceptance" | "accepted" | "declined";
 
+/**
+ * Contract-level category — owner correction: "In category, IHB/Large
+ * construction or special services should reflect." Distinct from
+ * `ContractCategory` above, which is the per-line-item category
+ * (civil/electrical/etc.) — this is a single classification for the whole
+ * contract, driving two conditional fields on `Contract` itself:
+ *   - `large_construction` → `servicesDescription` must capture every
+ *     service included (owner: "it should capture all services in
+ *     description of services").
+ *   - `ihb` ("Individual House Building") → `packageCriteria` must be set,
+ *     reusing the four owner-confirmed package tiers
+ *     (Essential/Smart/Premium/Signature — see
+ *     `src/lib/content/public-site.ts`'s `CONSTRUCTION_PACKAGES`) rather
+ *     than inventing a separate tier list.
+ * FRONTEND IMPLEMENTATION DECISION — see docs/OPEN_QUESTIONS.md.
+ */
+export type ContractCategoryType = "ihb" | "large_construction" | "special_services";
+
+/** Contract-format file attached at creation — owner correction #3 ("Contract format shall be shared for adding it as an attachment"). Same mock-only, session-lived object-URL pattern as Document Management (see docs/FILE_UPLOADS.md) — no real file storage yet. */
+export interface ContractAttachment {
+  fileName: string;
+  fileType: string;
+  fileSizeBytes: number;
+}
+
 export interface ContractLineItem {
   id: string;
   category: ContractCategory;
@@ -59,13 +84,45 @@ export interface ContractLineItem {
 
 export interface Contract {
   id: string;
-  /** Human-readable reference shown to the customer, e.g. "BB-CNT-2026-014". Backend-assigned. */
+  /**
+   * Human-readable reference shown to the customer. FRONTEND IMPLEMENTATION
+   * DECISION (owner correction #1): format changed from the previous demo
+   * scheme to `BB/{State}/{City}/{Year}/{00001}` (e.g.
+   * "BB/Gujarat/Vadodara/2026/00001"), with the 5-digit sequence scoped per
+   * state+city+financial year (so numbering restarts at 00001 for a new
+   * city or a new year) rather than one global running number — the more
+   * common convention for this kind of branch/location reference number.
+   * State/city segments have spaces stripped for a clean, unambiguous
+   * reference. Backend-assigned in a real system; generated client-side in
+   * this mock — see `contracts-adapter.ts` and docs/OPEN_QUESTIONS.md.
+   */
   contractNumber: string;
   title: string;
   customerId: string;
   /** The lead this contract originated from, if any — see docs/WORKFLOWS.md's lead pipeline. */
   leadId?: string;
   projectId?: string;
+  /** City the contract/project is for — owner correction #5 ("in place of customer name, city should reflect") and #6 (city autocomplete on create). */
+  city: string;
+  /** State the city is in — captured alongside `city` (via `CityAutocomplete`), feeds the contract number format above. */
+  state: string;
+  /** Contract-level category — see `ContractCategoryType`. */
+  contractCategory: ContractCategoryType;
+  /** Required, free-text, only when `contractCategory === "large_construction"`. */
+  servicesDescription?: string;
+  /** `ConstructionPackage["slug"]` (Essential/Smart/Premium/Signature), required only when `contractCategory === "ihb"`. */
+  packageCriteria?: string;
+  /** Contract-format file attached at creation, if any — owner correction #3. */
+  attachment?: ContractAttachment;
+  /**
+   * Date the contract was actually drawn up/agreed, as opposed to
+   * `createdAt` (when the record was entered into the system). FRONTEND
+   * IMPLEMENTATION DECISION per owner correction #7 ("date of creation of
+   * contract option should be there") — mirrors `Lead.receivedDate`'s
+   * rationale. Plain `YYYY-MM-DD` string, editable on the create form,
+   * defaults to today.
+   */
+  contractDate: string;
   status: ContractStatus;
   lineItems: ContractLineItem[];
   /** Free-text terms/notes shown alongside the line items. */
@@ -84,6 +141,12 @@ export type CreateContractInput = {
   customerId: string;
   leadId?: string;
   projectId?: string;
+  city: string;
+  state: string;
+  contractCategory: ContractCategoryType;
+  servicesDescription?: string;
+  packageCriteria?: string;
+  contractDate: string;
   notes?: string;
   lineItems: Omit<ContractLineItem, "id">[];
 };
@@ -91,6 +154,13 @@ export type CreateContractInput = {
 /** Fields the admin edit form may update — only while `status` is `"draft"` or `"declined"` (see docs/WORKFLOWS.md). */
 export type UpdateContractInput = {
   title?: string;
+  city?: string;
+  state?: string;
+  contractCategory?: ContractCategoryType;
+  servicesDescription?: string;
+  packageCriteria?: string;
+  contractDate?: string;
+  attachment?: ContractAttachment;
   notes?: string;
   lineItems?: Omit<ContractLineItem, "id">[];
 };

@@ -9,6 +9,8 @@ import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
 import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useProjectContext } from "@/components/providers/project-provider";
+import { useCustomerId } from "@/hooks/use-customer-id";
+import { useContracts } from "@/hooks/use-contracts";
 import { useDocuments } from "@/hooks/use-documents";
 import { DocumentFilters } from "@/components/documents/document-filters";
 import { DocumentTable } from "@/components/documents/document-table";
@@ -53,6 +55,9 @@ export default function MyDocumentsPage() {
  */
 function MyDocumentsContent() {
   const { projects, selected } = useProjectContext();
+  const customerId = useCustomerId();
+  const { result: contractsResult } = useContracts({ customerId, pageSize: 200 });
+  const contractsById = new Map((contractsResult?.items ?? []).map((c) => [c.id, c]));
   const [view, setView] = useState<ViewMode>("list");
   const [filters, setFilters] = useState<DocumentListParams>({
     page: 1,
@@ -118,7 +123,7 @@ function MyDocumentsContent() {
         </div>
       </div>
 
-      <DocumentFilters value={filters} onChange={setFilters} showProjectFilter={false} />
+      <DocumentFilters value={filters} onChange={setFilters} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">
@@ -156,7 +161,7 @@ function MyDocumentsContent() {
       )}
 
       {status === "success" && result && view === "warranty" && (
-        <DocumentWarrantyMapping documents={result.items} onView={(doc) => setPreviewId(doc.id)} />
+        <DocumentWarrantyMapping documents={result.items} contractsById={contractsById} onView={(doc) => setPreviewId(doc.id)} />
       )}
 
       <DocumentPreviewPanel documentId={previewId} perspective="customer" onClose={() => setPreviewId(null)} />
