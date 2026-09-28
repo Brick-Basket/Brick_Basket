@@ -1,61 +1,71 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils/cn";
 
-const SIZES = {
-  sm: { icon: 28, text: "text-lg" },
-  md: { icon: 36, text: "text-xl" },
-  lg: { icon: 48, text: "text-2xl" },
+const HEIGHTS = {
+  sm: 28,
+  md: 36,
+  lg: 48,
 } as const;
 
 export interface LogoProps {
-  /** "light" = wordmark for use on light/ivory surfaces (header). "dark" = for use on the charcoal footer/dark surfaces. */
+  /** "light" = full-color lockup, for light/ivory surfaces (header). "dark" =
+   *  the same artwork with the charcoal "Basket" wordmark + tagline recolored
+   *  to brand ivory, for the charcoal footer/sidebar/mobile-nav surfaces. */
   variant?: "light" | "dark";
-  size?: keyof typeof SIZES;
+  /** A preset ("sm"/"md"/"lg"), or an exact pixel height for cases the
+   *  presets don't fit — e.g. `withTagline`'s 3-line lockup needs more
+   *  height than the icon+wordmark presets were sized for, or the tagline
+   *  text renders unreadably small. */
+  size?: keyof typeof HEIGHTS | number;
+  /** Renders the full lockup with the "Built with Transparent Trust" tagline
+   *  baked into the source artwork, instead of just the icon + wordmark. */
   withTagline?: boolean;
   className?: string;
 }
 
+const ASSET = {
+  light: { wordmark: "/brand/logo-wordmark-light.png", full: "/brand/logo-full-light.png" },
+  dark: { wordmark: "/brand/logo-wordmark-dark.png", full: "/brand/logo-full-dark.png" },
+} as const;
+
+// Intrinsic pixel dimensions of the source PNGs — only used so next/image can
+// reserve layout space (no CLS) and derive the correct aspect ratio. The
+// actual on-screen size is set by the `height` style + `width: auto` below.
+const DIMENSIONS = {
+  wordmark: { width: 415, height: 215 },
+  full: { width: 415, height: 261 },
+} as const;
+
 /**
- * Brand lockup: the icon asset extracted from the official Branding.pdf
- * (public/brand/icon.png) plus a live CSS text wordmark — not a flattened
- * logo image for the wordmark itself, so exact brand hex values render
- * crisply at any size/theme instead of relying on raster color fidelity.
+ * Brand lockup — rendered from the real, official logo artwork (the icon,
+ * the hand-lettered "Brick Basket" wordmark, and the ™ mark), extracted
+ * directly from the client-supplied brand PDF at full resolution and cleaned
+ * up (trimmed, transparent background) — not recreated with CSS text/webfont
+ * approximations. See docs/OPEN_QUESTIONS.md #13 and docs/CHANGELOG.md for
+ * provenance.
  *
- * Note: source brand assets were only available as a PDF (raster/vector
- * flattened on export). public/brand/*.png were extracted and cleaned from
- * that PDF. Request native AI/EPS/SVG files from the designer for
- * production-grade scaling — see docs/OPEN_QUESTIONS.md.
+ * Two images exist per surface: the icon+wordmark only (default), and the
+ * full lockup with the "Built with Transparent Trust" tagline baked in
+ * (`withTagline`). The "dark" variant is a pixel recolor of the exact same
+ * artwork — only the charcoal "Basket"/tagline/™-outline pixels are swapped
+ * to brand ivory (the red stays the real brand red) — so it stays legible on
+ * the charcoal footer, sidebar and mobile-nav backgrounds instead of the
+ * dark wordmark disappearing into a dark surface.
  */
 export function Logo({ variant = "light", size = "md", withTagline = false, className }: LogoProps) {
-  const { icon, text } = SIZES[size];
-  const basketColor = variant === "dark" ? "text-brand-ivory" : "text-brand-charcoal";
+  const height = typeof size === "number" ? size : HEIGHTS[size];
+  const asset = withTagline ? ASSET[variant].full : ASSET[variant].wordmark;
+  const { width, height: intrinsicHeight } = withTagline ? DIMENSIONS.full : DIMENSIONS.wordmark;
 
   return (
-    <span className={cn("inline-flex flex-col", className)}>
-      <span className="inline-flex items-center gap-2">
-        <Image
-          src="/brand/icon.png"
-          alt="BrickBasket"
-          width={icon}
-          height={icon}
-          className="shrink-0"
-          priority
-        />
-        <span className={cn("font-heading font-extrabold leading-none", text)}>
-          <span className="text-brand-red">Brick</span>{" "}
-          <span className={basketColor}>Basket</span>
-        </span>
-      </span>
-      {withTagline && (
-        <span
-          className={cn(
-            "mt-1 text-[11px] font-semibold uppercase tracking-wide",
-            variant === "dark" ? "text-brand-ivory" : "text-ink-muted",
-          )}
-        >
-          Built with Transparent Trust
-        </span>
-      )}
-    </span>
+    <Image
+      src={asset}
+      alt="BrickBasket — Built with Transparent Trust"
+      width={width}
+      height={intrinsicHeight}
+      priority
+      className={cn("w-auto", className)}
+      style={{ height, width: "auto" }}
+    />
   );
 }

@@ -6,8 +6,14 @@ import type {
   UpdateDocumentInput,
   UploadNewVersionInput,
 } from "@/types/domain/document";
+import type { ContractCategoryType } from "@/types/domain/contract";
 import { mockDocuments } from "@/data/mock/documents";
 import { mockDocumentVersions } from "@/data/mock/document-versions";
+// Mock-only cross-reference so `city`/`contractCategory` filters below can
+// resolve a document's contract without a real join — a real backend would
+// do this server-side (a SQL join, or by denormalizing city/category onto
+// the document row at upload time). See docs/OPEN_QUESTIONS.md.
+import { mockContracts } from "@/data/mock/contracts";
 
 /**
  * Adapter boundary for the Document module. Components/hooks depend on
@@ -19,7 +25,7 @@ import { mockDocumentVersions } from "@/data/mock/document-versions";
  * export at the bottom of this file.
  *
  * Backend contract — see docs/API_CONTRACTS.md (Part 6) for full detail:
- *   GET    /api/documents                    — list, filtered by project/category; customer requests are always additionally filtered to visibleToCustomer=true server-side
+ *   GET    /api/documents                    — list, filtered by contract/project/category (owner correction: contract is now the primary scope); customer requests are always additionally filtered to visibleToCustomer=true server-side
  *   GET    /api/documents/:id                — detail
  *   POST   /api/documents                    — create (admin, multipart upload)
  *   PATCH  /api/documents/:id                — edit metadata / visibility (admin)
@@ -34,7 +40,13 @@ export interface DocumentActor {
 export interface DocumentListParams {
   search?: string;
   category?: DocumentCategory;
+  /** Scopes to one contract — the admin "documents for this contract" view always sets this. */
+  contractId?: string;
   projectId?: string;
+  /** Filters to documents whose contract is in this city — owner correction #5. */
+  city?: string;
+  /** Filters to documents whose contract has this contract-level category ("type of package") — owner correction #5. */
+  contractCategory?: ContractCategoryType;
   /** Force-filters to only documents visible to a customer — the customer portal always sets this. */
   visibleToCustomer?: boolean;
   /** Restricts to the two warranty categories — backs the Warranty Mapping view. */
@@ -79,8 +91,15 @@ class MockDocumentsAdapter implements DocumentsAdapter {
     await delay(300);
     let items = [...this.documents];
 
+    if (params.contractId) items = items.filter((d) => d.contractId === params.contractId);
     if (params.projectId) items = items.filter((d) => d.projectId === params.projectId);
     if (params.category) items = items.filter((d) => d.category === params.category);
+    if (params.city) {
+      items = items.filter((d) => mockContracts.find((c) => c.id === d.contractId)?.city === params.city);
+    }
+    if (params.contractCategory) {
+      items = items.filter((d) => mockContracts.find((c) => c.id === d.contractId)?.contractCategory === params.contractCategory);
+    }
     if (params.visibleToCustomer !== undefined) items = items.filter((d) => d.visibleToCustomer === params.visibleToCustomer);
     if (params.warrantyOnly) items = items.filter((d) => WARRANTY_CATEGORIES.includes(d.category));
     if (params.search) {
@@ -116,6 +135,7 @@ class MockDocumentsAdapter implements DocumentsAdapter {
       id: `doc_${Math.random().toString(36).slice(2, 10)}`,
       title: input.title,
       category: input.category,
+      contractId: input.contractId,
       projectId: input.projectId,
       fileName: input.fileName,
       fileType: input.fileType,

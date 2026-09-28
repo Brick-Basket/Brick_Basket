@@ -13,6 +13,15 @@ import { cn } from "@/lib/utils/cn";
  * mock data. Full wiring of "current project" into module screens happens
  * as each module ships (Part 4+); this component is the UI + state only.
  *
+ * FRONTEND IMPLEMENTATION DECISION (this pass, docs/OPEN_QUESTIONS.md #62):
+ * the trigger used to show only an icon + the project's name — nothing
+ * said what it was a selector *of*, which is exactly what made it read as
+ * mystery UI ("Commercial Complex"? "Luxury Villa"?) on the one shell
+ * (Portal) that still shows it after this pass — Admin no longer renders
+ * it at all, see `src/app/(internal)/admin/layout.tsx`. Added a small
+ * "Project" label in front of the trigger, plus a `title` tooltip on the
+ * button itself, so its purpose is legible without anyone having to ask.
+ *
  * FRONTEND IMPLEMENTATION DECISION (post-Part-20 stabilization pass, Phase
  * 14): the trigger + listbox markup (`aria-expanded`/`aria-haspopup`/
  * `role="listbox"`/`role="option"`) was already correct, but nothing
@@ -92,7 +101,10 @@ export function ProjectSelector() {
   if (projects.length === 0) return null;
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative flex items-center gap-2" ref={containerRef}>
+      <span className="hidden text-xs font-medium uppercase tracking-wide text-ink-muted sm:inline">
+        Project
+      </span>
       <button
         ref={triggerRef}
         type="button"
@@ -100,6 +112,7 @@ export function ProjectSelector() {
         onKeyDown={handleTriggerKeyDown}
         aria-expanded={open}
         aria-haspopup="listbox"
+        title="Switches which project's data you're viewing (used by Documents and other project-specific screens)"
         className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-ink hover:bg-surface-muted"
       >
         <Building2 className="h-4 w-4 text-brand-red" aria-hidden />

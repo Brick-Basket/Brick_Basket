@@ -26,10 +26,12 @@ Request body:
   "phone": "+91 98765 43210",
   "source": "website",
   "subject": "Luxury villa construction enquiry",
-  "message": "Looking for a full design-build package..."
+  "message": "Looking for a full design-build package...",
+  "city": "Vadodara",
+  "receivedDate": "2026-09-08"
 }
 ```
-`source` ∈ `"website" | "social_media" | "call_whatsapp" | "personal_reference"` (confirmed, owner-specified — not configurable).
+`source` ∈ `"website" | "social_media" | "call_whatsapp" | "personal_reference"` (confirmed, owner-specified — not configurable). `city`/`receivedDate` are **new this pass (owner correction)** and optional on this shared create type — the public Contact form and Cost Estimator enquiry path don't collect either, so the backend should default `city: ""` and `receivedDate: <today>` when omitted (matching `MockLeadsAdapter.create`'s own fallback); the admin `LeadForm` (Lead Management, Part 4) always sends both, enforced required client-side. `city` is intended to be picked from an India-wide city list via typeahead (`CityAutocomplete`/`src/data/reference/indian-cities.ts`, a curated ~470-entry non-exhaustive list — see `docs/OPEN_QUESTIONS.md` #70) but the field itself stays free text so a city missing from that list can still be typed and saved.
 
 Response `201`:
 ```json
@@ -41,6 +43,8 @@ Response `201`:
   "source": "website",
   "subject": "Luxury villa construction enquiry",
   "message": "Looking for a full design-build package...",
+  "city": "Vadodara",
+  "receivedDate": "2026-09-08",
   "status": "new",
   "assignedTo": null,
   "createdAt": "2026-09-11T09:00:00.000Z",
@@ -57,7 +61,7 @@ Query params, all optional (frontend type: `LeadListParams`):
 
 | Param | Type | Notes |
 |---|---|---|
-| `search` | string | matches name / email / phone / subject, case-insensitive |
+| `search` | string | matches name / email / phone / subject / **city (added this pass)**, case-insensitive |
 | `source` | `LeadSource` | exact match |
 | `status` | `LeadStatus` | exact match |
 | `assignedTo` | staff user id, or literal `"unassigned"` | |
@@ -82,7 +86,7 @@ Response `200`: a single `Lead`. `404` if not found — frontend shows `ErrorSta
 
 ### `PATCH /api/leads/:id` — update fields — `leads:write`
 
-Request body: any subset of `{ name, email, phone, subject, message, assignedTo }` (frontend type: `UpdateLeadInput`). Notably **excludes** `status` — status changes go through the transition endpoint below so a status change is always distinguishable (and loggable) from an ordinary edit.
+Request body: any subset of `{ name, email, phone, subject, message, city, receivedDate, assignedTo }` (frontend type: `UpdateLeadInput`; `city`/`receivedDate` added this pass). Notably **excludes** `status` — status changes go through the transition endpoint below so a status change is always distinguishable (and loggable) from an ordinary edit.
 
 Response `200`: the updated `Lead`.
 
@@ -118,7 +122,7 @@ Query params (frontend type: `ContractListParams`), all optional:
 
 | Param | Type | Notes |
 |---|---|---|
-| `search` | string | matches contract number / title, case-insensitive |
+| `search` | string | matches contract number / title / **city / state (added this pass)**, case-insensitive |
 | `status` | `ContractStatus` | exact match |
 | `customerId` | string | **the customer portal (`/dashboard/contracts`) always sends its own `session.user.id` here — the backend must independently scope a customer-role request to their own contracts regardless of what this param says, never trust the client value for authorization** |
 | `sortBy` | `"createdAt" \| "updatedAt" \| "status" \| "title"` | default `createdAt` |
@@ -133,17 +137,21 @@ Response `200`: `{ items: Contract[], total, page, pageSize }`.
 
 Response `200`: a single `Contract`. `404` if not found, or if a customer requests a contract that isn't theirs (never `403` — don't confirm existence of another customer's contract).
 
-### `POST /api/contracts` — create — `contracts:write`
+### `POST /api/contracts` — create (multipart upload, owner correction this pass) — `contracts:write`
 
-Request body (frontend type: `CreateContractInput`): `{ title, customerId, leadId?, projectId?, notes?, lineItems: Omit<ContractLineItem, "id">[] }`.
+Request body (frontend type: `CreateContractInput`, now **multipart** since it can carry an optional attachment file): `{ title, customerId, leadId?, projectId?, city, state, contractCategory, servicesDescription?, packageCriteria?, contractDate, notes?, lineItems: Omit<ContractLineItem, "id">[] }` + optional `file` part. `servicesDescription` is required when `contractCategory === "large_construction"`, `packageCriteria` when `contractCategory === "ihb"` (enforced client-side via zod `.superRefine()`; the backend should enforce the same conditional rule server-side too).
 
-Response `201`: the created `Contract`, always `status: "draft"`. Backend responsibility: assigns `id`, `contractNumber` (display reference), line-item ids, and both timestamps.
+Response `201`: the created `Contract`, always `status: "draft"`. Backend responsibility: assigns `id`, `contractNumber` — generated as `BB/{state}/{city}/{year}/{00001}`, a counter scoped per state+city+year (see `docs/DATA_MODELS.md` and `docs/OPEN_QUESTIONS.md` #71) — line-item ids, both timestamps, and (if a file was uploaded) stores it and populates `attachment: {fileName, fileType, fileSizeBytes}`.
 
-### `PATCH /api/contracts/:id` — edit — `contracts:write`
+### `PATCH /api/contracts/:id` — edit (multipart upload, owner correction this pass) — `contracts:write`
 
-Request body (frontend type: `UpdateContractInput`): any subset of `{ title, notes, lineItems }`. **Only valid while `status` is `"draft"` or `"declined"`** — reject otherwise (`409`). Editing a `"declined"` contract also resets it to `"draft"` and clears `respondedAt`/`declineReason` — see `docs/WORKFLOWS.md`.
+Request body (frontend type: `UpdateContractInput`, multipart): any subset of `{ title, notes, lineItems, city, state, contractCategory, servicesDescription, packageCriteria, contractDate }` + optional `file` part (replaces the existing attachment when present). **Only valid while `status` is `"draft"` or `"declined"`** — reject otherwise (`409`). Editing a `"declined"` contract also resets it to `"draft"` and clears `respondedAt`/`declineReason` — see `docs/WORKFLOWS.md`. If `contractCategory` changes, the backend should clear whichever of `servicesDescription`/`packageCriteria` no longer applies to the new category (mirrored in `MockContractsAdapter.update`'s `nextCategory` branch).
 
 Response `200`: the updated `Contract`.
+
+### Contract attachment preview (mock-only convention, not a real endpoint)
+
+`ContractsAdapter.getAttachmentPreviewUrl(contractId): string | null` — mirrors `DocumentsAdapter.getPreviewUrl`'s in-memory `URL.createObjectURL` convention (see `docs/FILE_UPLOADS.md`): only a contract whose attachment file was uploaded during the current browser session has anything to preview/download; every seeded demo contract shows "no file on record." A real backend serves the stored file at a normal authenticated URL instead.
 
 ### `POST /api/contracts/:id/send` — admin: send for acceptance — `contracts:send_for_acceptance`
 
@@ -183,7 +191,10 @@ Query params (frontend type: `DocumentListParams`), all optional:
 |---|---|---|
 | `search` | string | matches title / file name, case-insensitive |
 | `category` | `DocumentCategory` | exact match |
-| `projectId` | string | **the customer portal (`/dashboard/documents`) always sends the currently-selected project's id** |
+| `contractId` | string | **new this pass, owner correction — the primary scope.** `/admin/documents/[contractId]` always sends this; the admin Contract Directory page (`/admin/documents`) itself queries `Contract`, not `Document` (see `docs/DATA_MODELS.md`) |
+| `city` | string | **new this pass** — resolved server-side by joining through the document's contract (`GRNLineItem`-style cross-reference; the mock adapter does this via a direct `mockContracts.find()` lookup, flagged as a mock-only shortcut a real backend would do via a SQL JOIN instead) |
+| `contractCategory` | `ContractCategoryType` | **new this pass** — same join-through-contract resolution as `city` above |
+| `projectId` | string | **the customer portal (`/dashboard/documents`) always sends the currently-selected project's id** — unchanged this pass, still works because `Document.projectId` is retained as a denormalized copy (see `docs/DATA_MODELS.md`) |
 | `visibleToCustomer` | boolean | **the customer portal always sends `true` here — the backend must independently enforce this for any customer-role request regardless of what this param says, never trust the client value for authorization** |
 | `warrantyOnly` | boolean | restricts to the two warranty categories, backs the Warranty Mapping view |
 | `sortBy` | `"uploadedAt" \| "updatedAt" \| "title" \| "category"` | default `uploadedAt` |
@@ -198,7 +209,7 @@ Response `200`: a single `Document`. `404` if not found, or if a customer reques
 
 ### `POST /api/documents` — create (multipart upload) — `documents:write`
 
-Request body (frontend type: `CreateDocumentInput` + the file itself): `{ title, category, projectId, visibleToCustomer, warrantyItem?, warrantyExpiresAt? }` plus the uploaded file. Backend responsibility: assigns `id`, `version: 1`, `fileName`/`fileType`/`fileSizeBytes` from the actual uploaded file (never trust client-supplied file metadata once real storage exists), `uploadedBy`/`uploadedByName` from the authenticated session, and both timestamps.
+Request body (frontend type: `CreateDocumentInput` + the file itself): `{ title, category, contractId, projectId?, visibleToCustomer, warrantyItem?, warrantyExpiresAt? }` plus the uploaded file. **`contractId` is required and is now the primary scope, replacing the old required `projectId`** (owner correction this pass — see `docs/DATA_MODELS.md`); `projectId` is sent too, denormalized from the selected contract's own `projectId`, purely so the customer portal's existing project-scoped view keeps working unchanged. This endpoint is only ever called from `/admin/documents/[contractId]` now — there is no generic, contract-less upload entry point any more (owner correction #1: "There should not be any separate category to upload the document"). Backend responsibility: assigns `id`, `version: 1`, `fileName`/`fileType`/`fileSizeBytes` from the actual uploaded file (never trust client-supplied file metadata once real storage exists), `uploadedBy`/`uploadedByName` from the authenticated session, and both timestamps.
 
 Response `201`: the created `Document`.
 
@@ -1309,6 +1320,82 @@ Permissions: `store_requisitions:read`/`store_requisitions:create`/`store_requis
 
 ---
 
+## BOQ Rate Items (implemented, BOQ rate management pass, post-Part-20 stabilization)
+
+Frontend files: `src/types/domain/boq-rate-item.ts`, `src/lib/api/adapters/boq-rates-adapter.ts` (`BoqRatesAdapter` — the contract below mirrors its methods 1:1), `src/hooks/use-boq-rates.ts`. Full background: `docs/OPEN_QUESTIONS.md` #67; full field list: `docs/DATA_MODELS.md`'s `BoqRateItem` section.
+
+### `GET /api/boq-rate-items` — list all 11 rate items — `pricing_content:view`
+
+No query params — a flat, unpaginated list (11 records today). Internal-only per `docs/OPEN_QUESTIONS.md` #76 — only the `/admin/pricing-content` screen fetches this endpoint; the public Cost Estimator no longer does.
+
+Response `200`: `BoqRateItem[]`.
+
+### `PATCH /api/boq-rate-items/:id` — edit an item's quantity, rate(s), and/or rationale — `pricing_content:manage`
+
+Request body (frontend type: `UpdateBoqRateItemInput`): any subset of `{ qtyPerSqft?, ratePerUnit?: BoqTierRates, rationale? }`. Never accepts `key`, `label`, `unit`, `group`, or `discrete` — those anchor the record and are immutable after creation, matching this repo's usual "anchor fields don't change" convention (e.g. `Vendor.codeSeriesCategory`, `ACEItem.projectId`). For a `"structure"`-group item the admin form sends the same value across all four `ratePerUnit` tiers (one input, kept in sync client-side) rather than the backend enforcing tier-equality itself — a real backend could choose to enforce that invariant server-side instead. Backend responsibility: sets `updatedAt`, and `updatedBy` from the authenticated session (never trust a client-supplied editor) — the frontend passes an `actor` hint to the mock adapter today (`{ name: "Admin" }`) purely as a placeholder for this until real auth is wired through.
+
+Response `200`: the updated `BoqRateItem`.
+
+Errors (both endpoints): `401` unauthenticated, `403` missing permission, `404` unknown item (`PATCH` only), `422` validation.
+
+Permissions: `pricing_content:view` (read) already existed (Part 3/post-Part-20, `admin` only); `pricing_content:manage` (edit) is new this pass, added to `permissions.ts` and assigned only to `admin` — see `docs/ROLES_AND_PERMISSIONS.md`.
+
+**Not part of this contract:** no create/delete endpoint — the admin UI has no add/remove-row affordance, only editing the 11 existing items (see `docs/DATA_MODELS.md`'s `BoqRateItem` notes and `docs/OPEN_QUESTIONS.md` #67(d)).
+
+## Pricing & Packages Content (placeholder, post-Part-20 — narrower scope after #67)
+
+**No real endpoints today for the remaining scope** — `ConstructionPackage`/`PackageComparisonRow`/the ground-coverage-and-timeline-options part of `EstimatorConfig` are still a static placeholder at `/admin/pricing-content` behind `pricing_content:view`, the same pattern as Cost Management above, added per `docs/OPEN_QUESTIONS.md` #65's audit. *(The BOQ-item-templates piece this section used to cover is no longer part of this placeholder — it's real and implemented now; see the `BOQ Rate Items` section immediately above.)* The difference from Cost Management: there's no missing specification here (every field is already live in `src/lib/content/public-site.ts`/`cost-estimator-math.ts`, see `docs/DATA_MODELS.md`'s matching section) — what's undecided is only *whether* to build real endpoints for this remaining scope. The sketch below is offered as a ready starting point **if** that decision is "yes"; it is a frontend proposal, not a confirmed contract, and every endpoint, status code and field name in it should be re-validated against the owner/backend team before implementation, the same as any other unconfirmed rule in this repo.
+
+Proposed resource: `ConstructionPackage` (§`docs/DATA_MODELS.md`), read-heavy, low write-frequency (a rate card changes rarely):
+
+- `GET /api/packages` — list all 4 (or however many) packages, permission: none for public read (the estimator/`  /plans` calls this unauthenticated today, effectively, since it's build-time content) — a real backend should keep this endpoint public/unauthenticated for the public site to keep working, and gate only the write endpoints below.
+- `GET /api/packages/:id` — single package detail.
+- `POST /api/packages` — create, permission: `pricing_content:view` (would likely need splitting into a `:view`/`:manage` pair once a real write path exists — the `pricing_content:view`/`pricing_content:manage` split introduced for BOQ Rate Items above is the precedent to follow).
+- `PATCH /api/packages/:id` — edit rate/copy/`newAtThisTier` fields.
+- `DELETE /api/packages/:id` — remove a tier (a 5th package, or retiring one — not currently a scenario the frontend anticipates; the UI hardcodes "4 packages" in a few places, e.g. `plans/page.tsx`'s grid columns, that would need generalizing first).
+- `GET /api/packages/comparison-rows` / `PATCH /api/packages/comparison-rows` — the `PackageComparisonRow[]` table (docs/OPEN_QUESTIONS.md #64's comparison grid).
+- `GET /api/estimator-config` / `PATCH /api/estimator-config` — the single `EstimatorConfig` settings row (ground-coverage options/default, timeline options — no longer includes BOQ item templates, see above).
+
+Response/error shapes would follow this repo's existing conventions exactly (`{ items, total, page, pageSize }` for lists, the entity itself for detail/mutation, the shared `{ error: { code, message } }` error envelope) — see §13 of `docs/BACKEND_CLAUDE_HANDOFF.md` for those conventions restated in one place.
+
+Permission: `pricing_content:view` is new this pass, already defined and assigned only to `admin` — see `docs/ROLES_AND_PERMISSIONS.md`. No other permission changes for this remaining, still-placeholder scope.
+
+---
+
+## Site Updates (implemented, Site Updates module, post-Part-20)
+
+Frontend files: `src/types/domain/site-update.ts`, `src/lib/api/adapters/site-updates-adapter.ts` (`SiteUpdatesAdapter` — the contract below mirrors its methods 1:1), `src/hooks/use-site-updates.ts`. Full field list and reasoning: `docs/DATA_MODELS.md`'s `SiteUpdate`/`SiteUpdateMedia` section.
+
+### `GET /api/site-updates` — list, filtered by project/date range — `site_updates:read`
+
+Query params: `projectId?`, `visibleToCustomer?` (the customer portal always sets this to `true` server-side, the same pattern as `GET /api/documents`), `dateFrom?`/`dateTo?` (ISO dates, inclusive), `page?`, `pageSize?`.
+
+Response `200`: `{ items: SiteUpdate[], total, page, pageSize }`.
+
+### `GET /api/site-updates/:id` — detail — `site_updates:read`
+
+Response `200`: `SiteUpdate`. `404` if not found, or (customer requests only) if `visibleToCustomer` is `false` — the backend should return `404` rather than `403` here, matching Document Management's own treatment of a customer requesting a non-visible document, so a customer never learns a hidden update exists at all.
+
+### `POST /api/site-updates` — post a new update (staff, multipart upload, multiple files) — `site_updates:write`
+
+Request body (frontend type: `CreateSiteUpdateInput`): `{ projectId, updateDate, remarks, relatedWorkItem?, visibleToCustomer }`, plus the uploaded files themselves as multipart parts. Each file becomes one `SiteUpdateMedia` entry; `type` ("photo"/"video") is derived server-side from the file's actual content type, not trusted from the client. `remarks` is required — reject with `422` if blank. `postedBy`/`postedByName` come from the authenticated session, never a client-supplied value.
+
+Response `201`: the created `SiteUpdate`.
+
+### `PATCH /api/site-updates/:id` — edit remarks/date/related-work-item/visibility (staff) — `site_updates:write`
+
+Request body (frontend type: `UpdateSiteUpdateInput`): any subset of `{ updateDate?, remarks?, relatedWorkItem?, visibleToCustomer? }`. **Never accepts `media`** — media is immutable after creation (see `docs/DATA_MODELS.md`); there is no endpoint to add, remove, or replace an individual media item on an existing update. Sets `updatedAt`.
+
+Response `200`: the updated `SiteUpdate`.
+
+Errors (all endpoints): `401` unauthenticated, `403` missing permission, `404` unknown update, `422` validation (missing `remarks`, invalid `projectId`, etc.).
+
+**Not part of this contract**: no delete endpoint (no delete action exists anywhere in this module's UI, staff- or admin-side); no endpoint to add media to an existing update (post a new update instead — see `docs/DATA_MODELS.md`); no geolocation field anywhere in the request or response shapes; no presigned-upload endpoints (the mock has no real storage to presign against) — see `docs/FILE_UPLOADS.md`'s "Site Updates media" section (`docs/OPEN_QUESTIONS.md` #69) for the proposed production upload flow (direct-to-storage via presigned URLs, async thumbnail/transcode processing, CDN delivery) and recommended size limits, which a real implementation of `POST /api/site-updates` should be built around instead of a single multipart request straight to the app server.
+
+Permissions: `site_updates:read`/`site_updates:write` are new this pass — `admin`, `project_manager`, and `site_engineer` hold both; `customer` holds `site_updates:read` only. See `docs/ROLES_AND_PERMISSIONS.md`.
+
+---
+
 ## Coverage note
 
-Every module that exists in this app has a contract section above (Lead Management through the post-Part-20 stabilization pass's Store Material Requisition addition). Cost Management (Part 18, see the Cost-to-Complete section above) has no contract of its own because it is a deliberate placeholder shell, not because it's undocumented — see `docs/OPEN_QUESTIONS.md` #4. (BrickBasket final hardening pass — P2 documentation cleanup: this section previously read "Every other module — Not yet implemented," which had gone stale once the modules below it shipped.)
+Every module that exists in this app has a contract section above (Lead Management through the post-Part-20 stabilization pass's Store Material Requisition addition). Cost Management (Part 18, see the Cost-to-Complete section above) has no contract of its own because it is a deliberate placeholder shell, not because it's undocumented — see `docs/OPEN_QUESTIONS.md` #4. Pricing & Packages Content (above) is the same kind of deliberate placeholder, plus a proposed-but-unconfirmed sketch of what a real contract would look like — see `docs/OPEN_QUESTIONS.md` #65. (BrickBasket final hardening pass — P2 documentation cleanup: this section previously read "Every other module — Not yet implemented," which had gone stale once the modules below it shipped.)

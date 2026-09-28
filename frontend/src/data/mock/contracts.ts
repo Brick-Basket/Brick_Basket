@@ -6,15 +6,27 @@ import type { Contract } from "@/types/domain/contract";
  * (`draft`, `sent_for_acceptance`, `accepted`, `declined`) and every
  * customer in `mock/customers.ts`, so the admin list, the customer
  * portal, and the read-only-after-acceptance rule are all exercisable.
+ *
+ * `contractNumber` values follow the new `BB/{State}/{City}/{year}/{00001}`
+ * format (owner correction #1), sequenced per state+city+year to match
+ * `ContractsAdapter.generateContractNumber`. `contractCategory` mixes all
+ * three values (`ihb`, `large_construction`, `special_services`) so every
+ * conditional field (`packageCriteria`, `servicesDescription`) has at least
+ * one seeded example.
  */
 export const mockContracts: Contract[] = [
   {
     id: "contract_1",
-    contractNumber: "BB-CNT-2026-011",
+    contractNumber: "BB/Gujarat/Vadodara/2026/00002",
     title: "Luxury Villa — Design-Build Construction",
     customerId: "u_customer",
     leadId: undefined,
     projectId: "proj_luxury_villa",
+    city: "Vadodara",
+    state: "Gujarat",
+    contractCategory: "ihb",
+    packageCriteria: "premium",
+    contractDate: "2026-09-01",
     status: "sent_for_acceptance",
     lineItems: [
       { id: "li_1_1", category: "civil", description: "Structural civil work — foundation to roof slab", uom: "sq.ft", quantity: 3200, rate: 1850 },
@@ -31,11 +43,15 @@ export const mockContracts: Contract[] = [
   },
   {
     id: "contract_2",
-    contractNumber: "BB-CNT-2026-006",
+    contractNumber: "BB/Gujarat/Vadodara/2026/00001",
     title: "Luxury Villa — Interior Fit-Out Addendum",
     customerId: "u_customer",
     leadId: undefined,
     projectId: "proj_luxury_villa",
+    city: "Vadodara",
+    state: "Gujarat",
+    contractCategory: "special_services",
+    contractDate: "2026-07-07",
     status: "accepted",
     lineItems: [
       { id: "li_2_1", category: "finishing", description: "Modular kitchen and wardrobes", uom: "lump sum", quantity: 1, rate: 850000 },
@@ -50,11 +66,15 @@ export const mockContracts: Contract[] = [
   },
   {
     id: "contract_3",
-    contractNumber: "BB-CNT-2026-014",
+    contractNumber: "BB/Gujarat/Vadodara/2026/00003",
     title: "Luxury Villa — Landscaping (Draft)",
     customerId: "u_customer",
     leadId: undefined,
     projectId: "proj_luxury_villa",
+    city: "Vadodara",
+    state: "Gujarat",
+    contractCategory: "special_services",
+    contractDate: "2026-09-09",
     status: "draft",
     lineItems: [
       { id: "li_3_1", category: "other", description: "Garden landscaping and boundary wall finishing", uom: "sq.ft", quantity: 900, rate: 620 },
@@ -68,11 +88,17 @@ export const mockContracts: Contract[] = [
   },
   {
     id: "contract_4",
-    contractNumber: "BB-CNT-2026-002",
+    contractNumber: "BB/UttarPradesh/Lucknow/2026/00001",
     title: "Duplex Construction — Full Turnkey",
     customerId: "cust_arjun_kapoor",
     leadId: "lead_seed_8",
     projectId: undefined,
+    city: "Lucknow",
+    state: "Uttar Pradesh",
+    contractCategory: "large_construction",
+    servicesDescription:
+      "Full civil construction (foundation to roof), electrical wiring and fittings, and standard finishing package (flooring, painting, fixtures) for a G+1 duplex.",
+    contractDate: "2026-07-17",
     status: "accepted",
     lineItems: [
       { id: "li_4_1", category: "civil", description: "Full civil construction, G+1 duplex", uom: "sq.ft", quantity: 4200, rate: 1780 },
@@ -88,11 +114,15 @@ export const mockContracts: Contract[] = [
   },
   {
     id: "contract_5",
-    contractNumber: "BB-CNT-2026-015",
+    contractNumber: "BB/UttarPradesh/Lucknow/2026/00002",
     title: "Duplex Construction — Solar Add-On",
     customerId: "cust_arjun_kapoor",
     leadId: "lead_seed_8",
     projectId: undefined,
+    city: "Lucknow",
+    state: "Uttar Pradesh",
+    contractCategory: "special_services",
+    contractDate: "2026-09-06",
     status: "sent_for_acceptance",
     lineItems: [
       { id: "li_5_1", category: "mechanical", description: "Rooftop solar panel installation, 5kW", uom: "lump sum", quantity: 1, rate: 320000 },
@@ -106,11 +136,16 @@ export const mockContracts: Contract[] = [
   },
   {
     id: "contract_6",
-    contractNumber: "BB-CNT-2026-009",
+    contractNumber: "BB/UttarPradesh/Basti/2026/00001",
     title: "Retail Showroom Fit-Out",
     customerId: "cust_harish_chandran",
     leadId: "lead_seed_14",
     projectId: undefined,
+    city: "Basti",
+    state: "Uttar Pradesh",
+    contractCategory: "large_construction",
+    servicesDescription: "Showroom shell civil work and retail-grade finishing package for a 1,800 sq.ft leased unit.",
+    contractDate: "2026-07-27",
     status: "declined",
     lineItems: [
       { id: "li_6_1", category: "civil", description: "Showroom shell civil work", uom: "sq.ft", quantity: 1800, rate: 1400 },
@@ -122,5 +157,60 @@ export const mockContracts: Contract[] = [
     declineReason: "Budget higher than expected for the finishing package — requested a revised quote.",
     createdAt: "2026-07-28T06:00:00.000Z",
     updatedAt: "2026-08-05T10:00:00.000Z",
+  },
+  {
+    // Added alongside the Documents module's move to contract-scoped
+    // uploads (owner corrections) — every document needs a real contract
+    // behind it; this backs the Commercial Complex project's seeded
+    // documents (doc_7, doc_8). See mock/projects.ts and mock/customers.ts.
+    id: "contract_7",
+    contractNumber: "BB/Odisha/Jharsuguda/2026/00001",
+    title: "Commercial Complex — Civil & Electrical Construction",
+    customerId: "cust_rohit_malhotra",
+    leadId: "lead_seed_2",
+    projectId: "proj_commercial_complex",
+    city: "Jharsuguda",
+    state: "Odisha",
+    contractCategory: "large_construction",
+    servicesDescription: "Civil shell construction and electrical works for a multi-tenant commercial complex.",
+    contractDate: "2026-07-14",
+    status: "accepted",
+    lineItems: [
+      { id: "li_7_1", category: "civil", description: "Civil shell construction", uom: "sq.ft", quantity: 12000, rate: 1650 },
+      { id: "li_7_2", category: "electrical", description: "Electrical works — common areas + shell", uom: "sq.ft", quantity: 12000, rate: 175 },
+    ],
+    notes: "Illustrative rates for demonstration only.",
+    sentAt: "2026-07-16T07:00:00.000Z",
+    respondedAt: "2026-07-19T09:00:00.000Z",
+    declineReason: null,
+    createdAt: "2026-07-15T06:00:00.000Z",
+    updatedAt: "2026-07-19T09:00:00.000Z",
+  },
+  {
+    // Added alongside the Documents module's move to contract-scoped
+    // uploads — backs the Modern Residence project's seeded documents
+    // (doc_9, doc_10). See mock/projects.ts and mock/customers.ts.
+    id: "contract_8",
+    contractNumber: "BB/UttarPradesh/Lucknow/2026/00003",
+    title: "Modern Residence — IHB Construction",
+    customerId: "cust_modern_residence",
+    leadId: undefined,
+    projectId: "proj_modern_residence",
+    city: "Lucknow",
+    state: "Uttar Pradesh",
+    contractCategory: "ihb",
+    packageCriteria: "smart",
+    contractDate: "2026-06-24",
+    status: "accepted",
+    lineItems: [
+      { id: "li_8_1", category: "civil", description: "Full civil construction", uom: "sq.ft", quantity: 3600, rate: 1799 },
+      { id: "li_8_2", category: "finishing", description: "Finishing package — Smart tier", uom: "sq.ft", quantity: 3600, rate: 420 },
+    ],
+    notes: "Illustrative rates for demonstration only.",
+    sentAt: "2026-06-26T07:00:00.000Z",
+    respondedAt: "2026-06-28T09:00:00.000Z",
+    declineReason: null,
+    createdAt: "2026-06-25T06:00:00.000Z",
+    updatedAt: "2026-06-28T09:00:00.000Z",
   },
 ];

@@ -47,7 +47,6 @@ function AdminContractsContent() {
   });
   const { status, error, result, refetch } = useContracts(filters);
   const { customers } = useCustomers();
-  const customersById = new Map(customers.map((c) => [c.id, c]));
 
   const handleSortChange = (key: string) => {
     setFilters((prev) => ({
@@ -91,7 +90,6 @@ function AdminContractsContent() {
         <>
           <ContractTable
             contracts={result.items}
-            customersById={customersById}
             sortBy={filters.sortBy}
             sortDir={filters.sortDir}
             onSortChange={handleSortChange}

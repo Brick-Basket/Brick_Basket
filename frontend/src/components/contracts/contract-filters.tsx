@@ -22,7 +22,7 @@ export function ContractFilters({
   return (
     <FilterBar>
       <SearchInput
-        placeholder="Search contract number or title…"
+        placeholder="Search contract number, title, or city…"
         defaultValue={value.search}
         onChange={(e) => onChange({ ...value, search: e.target.value, page: 1 })}
         className="w-full sm:w-64"
@@ -34,7 +34,7 @@ export function ContractFilters({
         className="w-full sm:w-48"
         aria-label="Filter by status"
       >
-        <option value="">All statuses</option>
+        <option value="">All status</option>
         {STATUS_ORDER.map((s) => (
           <option key={s} value={s}>
             {CONTRACT_STATUS_CONFIG[s].label}

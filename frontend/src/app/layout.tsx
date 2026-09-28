@@ -11,10 +11,14 @@ const poppins = Poppins({
   display: "swap",
 });
 
-// Fallback for the Primary Font ("Super Wonder", a licensed display face not
-// available via next/font/google) until the client supplies the licensed
-// files — see docs/OPEN_QUESTIONS.md. Baloo 2 is free and shares the bold,
-// rounded, friendly character of the brand's real headline font.
+// Primary Font per docs/BRAND_GUIDELINES.md is "Super Wonder", a licensed
+// display face. The client did supply a real SuperWonder-Regular.ttf
+// (self-hosted briefly via next/font/local), but the owner asked to revert
+// that and go back to how headings looked before — so Baloo 2 is back to
+// being the actual rendered heading font again, not just a fallback. See
+// docs/OPEN_QUESTIONS.md #13 and docs/CHANGELOG.md for the back-and-forth.
+// (The supplied file is still sitting unused at
+// src/app/fonts/SuperWonder-Regular.ttf if this gets revisited later.)
 const headingFallback = Baloo_2({
   subsets: ["latin"],
   weight: ["600", "700", "800"],

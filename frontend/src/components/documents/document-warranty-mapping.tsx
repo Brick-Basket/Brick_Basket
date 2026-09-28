@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/domain/empty-state";
 import { DOCUMENT_CATEGORY_CONFIG } from "@/components/documents/document-category-config";
 import { formatDate } from "@/lib/utils/format";
-import { useProjects } from "@/hooks/use-projects";
+import type { Contract } from "@/types/domain/contract";
 import type { Document } from "@/types/domain/document";
 
 /**
@@ -16,9 +16,20 @@ import type { Document } from "@/types/domain/document";
  * view but don't define its data model, so this maps 1 document → 1
  * warranted item via `Document.warrantyItem`/`warrantyExpiresAt` rather
  * than a real warranted-item catalog — see docs/OPEN_QUESTIONS.md.
+ *
+ * Owner correction #4: "Under warranty mapping, contract reference number
+ * should reflect along with other details as reflected" — `contractsById`
+ * added so each card can show `contract.contractNumber`.
  */
-export function DocumentWarrantyMapping({ documents, onView }: { documents: Document[]; onView: (document: Document) => void }) {
-  const { projects: allProjects } = useProjects();
+export function DocumentWarrantyMapping({
+  documents,
+  contractsById,
+  onView,
+}: {
+  documents: Document[];
+  contractsById: Map<string, Contract>;
+  onView: (document: Document) => void;
+}) {
   if (documents.length === 0) {
     return (
       <EmptyState
@@ -35,6 +46,7 @@ export function DocumentWarrantyMapping({ documents, onView }: { documents: Docu
     <div className="grid gap-3 sm:grid-cols-2">
       {documents.map((doc) => {
         const expired = doc.warrantyExpiresAt ? new Date(doc.warrantyExpiresAt).getTime() < now : false;
+        const contract = contractsById.get(doc.contractId);
         return (
           <Card key={doc.id} className="cursor-pointer transition-shadow hover:shadow-lg" onClick={() => onView(doc)}>
             <CardContent className="flex flex-col gap-2 pt-6">
@@ -46,7 +58,7 @@ export function DocumentWarrantyMapping({ documents, onView }: { documents: Docu
               </div>
               <p className="text-xs text-ink-muted">{DOCUMENT_CATEGORY_CONFIG[doc.category].label}</p>
               <p className="text-sm text-ink-muted">{doc.title}</p>
-              <p className="text-xs text-ink-muted">{allProjects.find((p) => p.id === doc.projectId)?.name ?? "—"}</p>
+              <p className="text-xs font-medium text-ink-muted">{contract?.contractNumber ?? "—"}</p>
               {doc.warrantyExpiresAt && (
                 <p className="text-xs text-ink-muted">
                   {expired ? "Expired" : "Expires"} {formatDate(doc.warrantyExpiresAt)}

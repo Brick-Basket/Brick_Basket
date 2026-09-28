@@ -10,12 +10,12 @@ import { ErrorState } from "@/components/domain/error-state";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useSession } from "@/components/providers/auth-provider";
 import { useDocument, useUpdateDocument } from "@/hooks/use-documents";
+import { useContract } from "@/hooks/use-contracts";
 import { documentsAdapter } from "@/lib/api/adapters/documents-adapter";
 import { DocumentVersionHistory } from "@/components/documents/document-version-history";
 import { DocumentVersionUploadForm } from "@/components/documents/document-version-upload-form";
 import { DOCUMENT_CATEGORY_CONFIG } from "@/components/documents/document-category-config";
 import { formatBytes, formatDateTime } from "@/lib/utils/format";
-import { useProjects } from "@/hooks/use-projects";
 
 /**
  * Preview modal boundary required by the module. Deliberately does NOT
@@ -39,11 +39,10 @@ export function DocumentPreviewPanel({
   const { session } = useSession();
   const { status, error, document, versions, refetch } = useDocument(documentId);
   const { submit: updateDocument, status: updateStatus, error: updateError } = useUpdateDocument();
-  const { projects: allProjects } = useProjects();
+  const { contract } = useContract(document?.contractId ?? null);
   const [showVersionUpload, setShowVersionUpload] = useState(false);
 
   const previewUrl = documentId ? documentsAdapter.getPreviewUrl(documentId) : null;
-  const project = document ? allProjects.find((p) => p.id === document.projectId) : null;
 
   // FRONTEND IMPLEMENTATION DECISION (post-Part-20 stabilization pass, Phase
   // 13): guarded on the mutation's return value — a failed toggle used to
@@ -123,8 +122,8 @@ export function DocumentPreviewPanel({
 
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <dt className="text-xs text-ink-muted">Project</dt>
-              <dd className="text-ink">{project?.name ?? "—"}</dd>
+              <dt className="text-xs text-ink-muted">Contract</dt>
+              <dd className="text-ink">{contract?.contractNumber ?? "—"}</dd>
             </div>
             <div>
               <dt className="text-xs text-ink-muted">Version</dt>

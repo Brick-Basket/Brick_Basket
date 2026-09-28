@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <>
-      <PageBanner title="Login" current="Login" />
+      <PageBanner pageKey="login" />
       <section className="container py-16 md:py-20">
         <Suspense
           fallback={

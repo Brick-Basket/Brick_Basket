@@ -1,6 +1,7 @@
 import type { AuthAdapter, LoginInput, RegisterInput, Session } from "@/lib/auth/types";
 import { findDemoUserByEmail } from "@/lib/auth/mock-users";
 import { createRegisteredUser, findRegisteredUserByEmail } from "@/lib/auth/registered-users-store";
+import { permissionsForRoles } from "@/lib/permissions/permissions";
 
 const SESSION_STORAGE_KEY = "brickbasket.session";
 /** Demo-only session length so expiry behavior is actually observable. */
@@ -75,7 +76,21 @@ class MockAuthAdapter implements AuthAdapter {
         window.localStorage.removeItem(SESSION_STORAGE_KEY);
         return null;
       }
-      return session;
+      // Re-derive `permissions` from the persisted `roles` on every read,
+      // rather than trusting whatever was baked into localStorage at login
+      // time. Without this, a permission added to `ROLE_PERMISSIONS` after
+      // someone's last login silently never appears for them — the UI
+      // looks like the new feature is missing/broken, when really it's
+      // just a stale demo session. A real backend-issued session would
+      // have the same class of staleness risk (a JWT's claims vs. the
+      // server's current role config) and should decide its own
+      // refresh/re-issue strategy — this mock adapter's fix is scoped to
+      // itself. See docs/AUTHENTICATION.md.
+      const refreshed: Session = {
+        ...session,
+        user: { ...session.user, permissions: permissionsForRoles(session.user.roles) },
+      };
+      return refreshed;
     } catch {
       window.localStorage.removeItem(SESSION_STORAGE_KEY);
       return null;

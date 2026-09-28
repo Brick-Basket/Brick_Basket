@@ -24,6 +24,7 @@ import {
   FileBarChart,
   TrendingUp,
   Settings2,
+  Camera,
 } from "lucide-react";
 import { ADMIN_ROUTES, PORTAL_ROUTES } from "@/lib/constants/routes";
 import type { PermissionKey } from "@/lib/permissions/permissions";
@@ -46,6 +47,7 @@ export const PORTAL_NAV: NavGroup[] = [
     items: [
       { label: "Overview", href: PORTAL_ROUTES.home, icon: LayoutDashboard },
       { label: "My Projects", href: PORTAL_ROUTES.projects, icon: FolderKanban },
+      { label: "Site Updates", href: PORTAL_ROUTES.siteUpdates, icon: Camera, permission: "site_updates:read" },
       { label: "Contracts", href: PORTAL_ROUTES.contracts, icon: FileSignature, permission: "contracts:read" },
       { label: "Documents", href: PORTAL_ROUTES.documents, icon: FileText, permission: "documents:read" },
       { label: "Material Receipts", href: PORTAL_ROUTES.mrc, icon: BadgeCheck, permission: "mrc:read" },
@@ -96,6 +98,7 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { label: "Schedule", href: ADMIN_ROUTES.schedule, icon: CalendarRange, permission: "schedule:read" },
       { label: "Daily Progress (DPR)", href: ADMIN_ROUTES.dpr, icon: NotebookPen, permission: "dpr:read" },
+      { label: "Site Updates", href: ADMIN_ROUTES.siteUpdates, icon: Camera, permission: "site_updates:read" },
     ],
   },
   {
@@ -114,6 +117,12 @@ export const ADMIN_NAV: NavGroup[] = [
     label: "Other",
     items: [
       { label: "Cost Management", href: ADMIN_ROUTES.costManagement, icon: Settings2, permission: "cost_management:view" },
+      {
+        label: "Pricing & Packages Content",
+        href: ADMIN_ROUTES.pricingContent,
+        icon: Settings2,
+        permission: "pricing_content:view",
+      },
     ],
   },
 ];

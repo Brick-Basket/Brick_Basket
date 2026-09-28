@@ -1,9 +1,11 @@
 "use client";
 
+import { CalendarDays, MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { findDemoUserById } from "@/lib/auth/mock-users";
+import { cn } from "@/lib/utils/cn";
 import { LEAD_SOURCE_CONFIG } from "@/components/leads/lead-source-config";
 import { LEAD_STATUS_CONFIG, LEAD_STATUS_ORDER } from "@/components/leads/lead-status-config";
 import type { Lead, LeadStatus } from "@/types/domain/lead";
@@ -47,19 +49,32 @@ export function LeadKanban({
               {columnLeads.map((lead) => {
                 const staff = lead.assignedTo ? findDemoUserById(lead.assignedTo) : null;
                 const SourceIcon = LEAD_SOURCE_CONFIG[lead.source].icon;
+                const isConverted = lead.status === "converted";
                 return (
-                  <Card key={lead.id} className="p-3">
+                  <Card
+                    key={lead.id}
+                    className={cn("p-3", isConverted && "border-success/40 bg-success/5")}
+                  >
                     <button
                       type="button"
                       onClick={() => onView(lead)}
                       className="w-full text-left"
                     >
                       <p className="text-sm font-medium text-ink">{lead.name}</p>
-                      <p className="mt-0.5 line-clamp-2 text-xs text-ink-muted">{lead.subject}</p>
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        <span className="line-clamp-1">{lead.city || "—"}</span>
+                      </p>
                     </button>
                     <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-muted">
                       <SourceIcon className="h-3.5 w-3.5" aria-hidden />
                       {LEAD_SOURCE_CONFIG[lead.source].label}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
+                      <CalendarDays className="h-3.5 w-3.5" aria-hidden />
+                      {lead.receivedDate
+                        ? new Date(lead.receivedDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                        : "—"}
                     </div>
                     <p className="mt-1 text-xs text-ink-muted">{staff ? staff.name : "Unassigned"}</p>
                     <PermissionGuard permission="leads:write">

@@ -1,15 +1,38 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { PUBLIC_ROUTES } from "@/lib/constants/routes";
+import { useLanguage } from "@/components/providers/language-provider";
+import { UI_TEXT } from "@/lib/i18n/translations";
+
+type PageBannerKey = keyof typeof UI_TEXT.en.pageBanner;
 
 /**
  * The red interior-page banner used across About/Services/Why Us/
- * Portfolio/Contact/FAQ/How It Works/Plans, matching the approved UI
- * references: solid Brick Red band, a subtle white line-art texture per the
- * brand guide's "Red Background Pattern" (base #E31E24, pattern #FFFFFF,
- * opacity 8–10%), a page title, and a Home ▸ Current breadcrumb.
+ * Portfolio/Contact/FAQ/How It Works/Plans/Login/Register, matching the
+ * approved UI references: solid Brick Red band, a subtle white line-art
+ * texture per the brand guide's "Red Background Pattern" (base #E31E24,
+ * pattern #FFFFFF, opacity 8–10%), a page title, and a Home ▸ Current
+ * breadcrumb.
+ *
+ * BILINGUAL (docs/OPEN_QUESTIONS.md #77): takes a `pageKey` (instead of raw
+ * `title`/`current` strings) so it can look its own title/breadcrumb text up
+ * from `UI_TEXT.pageBanner.<pageKey>` via `useLanguage()` — every call site
+ * across the standalone pages passed identical literal English text before
+ * this change (verified via `grep -rn "<PageBanner" src/app`), so this is a
+ * drop-in prop-signature swap, not a behavior change for English visitors.
+ * This is a Client Component (needs the language context), but every caller
+ * is itself a Server Component that keeps its own `metadata` export — a
+ * Server Component can render a Client Component as a child, it just can't
+ * *be* one and export `metadata` at the same time (see `HeroSection`/
+ * `ClosingCtaSection` for the same pattern on the Home page).
  */
-export function PageBanner({ title, current }: { title: string; current: string }) {
+export function PageBanner({ pageKey }: { pageKey: PageBannerKey }) {
+  const { t } = useLanguage();
+  const title = t(`pageBanner.${pageKey}.title`);
+  const current = t(`pageBanner.${pageKey}.current`);
+
   return (
     <section className="relative overflow-hidden bg-brand-red text-white">
       <svg
@@ -34,7 +57,7 @@ export function PageBanner({ title, current }: { title: string; current: string 
         <h1 className="font-heading text-3xl font-extrabold md:text-4xl">{title}</h1>
         <nav aria-label="Breadcrumb" className="mt-3 flex items-center gap-1.5 text-sm text-white/80">
           <Link href={PUBLIC_ROUTES.home} className="hover:text-white">
-            Home
+            {t("nav.home")}
           </Link>
           <ChevronRight className="h-3.5 w-3.5" aria-hidden />
           <span className="text-white">{current}</span>

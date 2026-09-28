@@ -1,7 +1,10 @@
-import type { ReactNode } from "react";
+"use client";
+
 import { Award, Gem, Eye, Users2, Clock3, Smile } from "lucide-react";
 import { ImagePlaceholder } from "@/components/marketing/image-placeholder";
 import { SectionHeading } from "@/components/marketing/section-heading";
+import { useLanguage } from "@/components/providers/language-provider";
+import { WHY_US_REASONS_HI } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils/cn";
 
 // Matches the approved "Why Choose BrickBasket?" UI reference exactly.
@@ -47,16 +50,20 @@ const REASONS = [
 export function WhyUsSection({
   id,
   className,
-  heading,
+  showHeading,
 }: {
   id?: string;
   className?: string;
   /** Shown above the grid — omit on the standalone page, which uses PageBanner instead. */
-  heading?: { eyebrow?: string; title: ReactNode };
+  showHeading?: boolean;
 }) {
+  const { lang, t } = useLanguage();
+
   return (
     <section id={id} className={cn("container py-16 md:py-20", className)}>
-      {heading && <SectionHeading eyebrow={heading.eyebrow} title={heading.title} className="mb-10" />}
+      {showHeading && (
+        <SectionHeading eyebrow={t("whyUs.headingEyebrow")} title={t("whyUs.headingTitle")} className="mb-10" />
+      )}
       <div className="grid gap-10 md:grid-cols-2 md:items-center">
         <ImagePlaceholder
           alt="Construction site at dusk with tower cranes over a coastal high-rise under construction"
@@ -65,14 +72,17 @@ export function WhyUsSection({
         <ul className="flex flex-col gap-6">
           {REASONS.map((reason) => {
             const Icon = reason.icon;
+            const tr = WHY_US_REASONS_HI[reason.title];
+            const title = lang === "hi" && tr ? tr.title : reason.title;
+            const description = lang === "hi" && tr ? tr.description : reason.description;
             return (
               <li key={reason.title} className="flex gap-4">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-red/10 text-brand-red">
                   <Icon className="h-5 w-5" aria-hidden />
                 </div>
                 <div>
-                  <h3 className="font-heading text-base font-semibold text-ink">{reason.title}</h3>
-                  <p className="mt-1 text-sm text-ink-muted">{reason.description}</p>
+                  <h3 className="font-heading text-base font-semibold text-ink">{title}</h3>
+                  <p className="mt-1 text-sm text-ink-muted">{description}</p>
                 </div>
               </li>
             );

@@ -7,8 +7,28 @@ import { Menu, X, UserCircle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { useSession } from "@/components/providers/auth-provider";
+import { useLanguage } from "@/components/providers/language-provider";
+import { LanguageSwitcher } from "@/components/marketing/language-switcher";
 import { MAIN_NAV, PUBLIC_ROUTES, PORTAL_ROUTES, ADMIN_ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
+
+/**
+ * `MAIN_NAV` (`src/lib/constants/routes.ts`) stays the single English
+ * source of truth for hrefs/order — this just maps each href to its
+ * translation key, so a Hindi visitor sees translated labels without
+ * touching that shared route data (also read by the footer's Quick Links).
+ */
+const NAV_LABEL_KEY: Record<string, string> = {
+  "/#home": "nav.home",
+  "/#about": "nav.about",
+  "/#services": "nav.services",
+  "/#how-it-works": "nav.howItWorks",
+  "/#cost-estimator": "nav.costEstimator",
+  "/#projects": "nav.projects",
+  "/#why-us": "nav.whyUs",
+  "/#faq": "nav.faq",
+  "/#contact": "nav.contact",
+};
 
 /**
  * Public-site header. Client component because of the mobile nav
@@ -35,6 +55,7 @@ export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { status, session } = useSession();
+  const { t } = useLanguage();
   const isHome = pathname === PUBLIC_ROUTES.home;
   const [activeSection, setActiveSection] = useState("home");
 
@@ -84,7 +105,7 @@ export function SiteHeader() {
         ? PORTAL_ROUTES.home
         : ADMIN_ROUTES.home
       : PUBLIC_ROUTES.login;
-  const accountLabel = status === "authenticated" ? "My Account" : "Login";
+  const accountLabel = status === "authenticated" ? t("nav.myAccount") : t("nav.login");
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
@@ -104,12 +125,13 @@ export function SiteHeader() {
                 isActive(item.href) ? "text-brand-red" : "text-ink",
               )}
             >
-              {item.label}
+              {t(NAV_LABEL_KEY[item.href] ?? "") || item.label}
             </Link>
           ))}
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
+          <LanguageSwitcher />
           <Link
             href={accountHref}
             className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-brand-red"
@@ -118,14 +140,14 @@ export function SiteHeader() {
             {accountLabel}
           </Link>
           <Link href={PUBLIC_ROUTES.contact} className={buttonVariants({ size: "md" })}>
-            Get a Quote
+            {t("nav.getQuote")}
           </Link>
         </div>
 
         <button
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink md:hidden"
-          aria-label={open ? "Close menu" : "Open menu"}
+          aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -150,7 +172,7 @@ export function SiteHeader() {
                 )}
                 onClick={() => setOpen(false)}
               >
-                {item.label}
+                {t(NAV_LABEL_KEY[item.href] ?? "") || item.label}
               </Link>
             ))}
             <Link
@@ -166,8 +188,9 @@ export function SiteHeader() {
               className="mt-2 rounded-md bg-brand-red px-3 py-2 text-center text-sm font-medium text-white"
               onClick={() => setOpen(false)}
             >
-              Get a Quote
+              {t("nav.getQuote")}
             </Link>
+            <LanguageSwitcher className="mt-3 self-start" />
           </div>
         </nav>
       )}

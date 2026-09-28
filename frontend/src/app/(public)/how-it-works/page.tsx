@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function HowItWorksPage() {
   return (
     <>
-      <PageBanner title="How It Works" current="How It Works" />
+      <PageBanner pageKey="howItWorks" />
       <HowItWorksSection />
     </>
   );

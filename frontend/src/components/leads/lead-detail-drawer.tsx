@@ -107,6 +107,18 @@ export function LeadDetailDrawer({
                 </a>
               </div>
               <div>
+                <dt className="text-xs font-medium text-ink-muted">City</dt>
+                <dd className="mt-0.5 text-ink">{lead.city || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium text-ink-muted">Date of Receipt</dt>
+                <dd className="mt-0.5 text-ink">
+                  {lead.receivedDate
+                    ? new Date(lead.receivedDate).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                    : "—"}
+                </dd>
+              </div>
+              <div>
                 <dt className="text-xs font-medium text-ink-muted">Subject</dt>
                 <dd className="mt-0.5 text-ink">{lead.subject}</dd>
               </div>

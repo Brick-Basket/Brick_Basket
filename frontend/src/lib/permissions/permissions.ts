@@ -72,6 +72,10 @@ export type PermissionKey =
   | "finance:read"
   | "finance:write"
   | "cost_management:view"
+  | "pricing_content:view"
+  | "pricing_content:manage"
+  | "site_updates:read"
+  | "site_updates:write"
   | "admin:access";
 
 /** Default role → permission set. CONFIGURABLE — pending client confirmation. */
@@ -118,8 +122,12 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "finance:read",
     "finance:write",
     "cost_management:view",
+    "pricing_content:view",
+    "pricing_content:manage",
+    "site_updates:read",
+    "site_updates:write",
   ],
-  customer: ["contracts:read", "contracts:accept", "documents:read", "mrc:read", "mrc:accept", "finance:read"],
+  customer: ["contracts:read", "contracts:accept", "documents:read", "mrc:read", "mrc:accept", "finance:read", "site_updates:read"],
   project_manager: [
     "admin:access",
     "leads:read",
@@ -134,6 +142,8 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "schedule:write",
     "dpr:read",
     "dpr:write",
+    "site_updates:read",
+    "site_updates:write",
   ],
   site_engineer: [
     "admin:access",
@@ -143,6 +153,8 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "documents:read",
     "store_requisitions:read",
     "store_requisitions:create",
+    "site_updates:read",
+    "site_updates:write",
   ],
   purchaser: [
     "admin:access",

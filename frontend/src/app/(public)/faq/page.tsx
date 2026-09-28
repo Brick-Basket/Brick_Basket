@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function FaqPage() {
   return (
     <>
-      <PageBanner title="Frequently Asked Questions" current="FAQ" />
+      <PageBanner pageKey="faq" />
       <FaqSection />
     </>
   );

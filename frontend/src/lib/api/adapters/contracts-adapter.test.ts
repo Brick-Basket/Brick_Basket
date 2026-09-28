@@ -10,11 +10,17 @@ describe("contractsAdapter — send → accept/decline workflow", () => {
       {
         title: "Test Contract — Foundation",
         customerId: "cust_arjun_kapoor",
+        city: "Lucknow",
+        state: "Uttar Pradesh",
+        contractCategory: "special_services",
+        contractDate: "2026-09-10",
         lineItems: [{ category: "civil", description: "Foundation work", uom: "sqft", quantity: 100, rate: 500 }],
       },
+      null,
       ADMIN,
     );
     expect(contract.status).toBe("draft");
+    expect(contract.contractNumber).toMatch(/^BB\/UttarPradesh\/Lucknow\/\d{4}\/\d{5}$/);
 
     const sent = await contractsAdapter.sendForAcceptance(contract.id, ADMIN);
     expect(sent.status).toBe("sent_for_acceptance");
@@ -31,8 +37,13 @@ describe("contractsAdapter — send → accept/decline workflow", () => {
       {
         title: "Test Contract — Roofing",
         customerId: "cust_arjun_kapoor",
+        city: "Lucknow",
+        state: "Uttar Pradesh",
+        contractCategory: "special_services",
+        contractDate: "2026-09-10",
         lineItems: [{ category: "civil", description: "Roofing", uom: "sqft", quantity: 50, rate: 300 }],
       },
+      null,
       ADMIN,
     );
     await contractsAdapter.sendForAcceptance(contract.id, ADMIN);
@@ -49,14 +60,20 @@ describe("contractsAdapter — send → accept/decline workflow", () => {
       {
         title: "Test Contract — Painting",
         customerId: "cust_arjun_kapoor",
+        city: "Lucknow",
+        state: "Uttar Pradesh",
+        contractCategory: "large_construction",
+        servicesDescription: "Interior and exterior painting.",
+        contractDate: "2026-09-10",
         lineItems: [{ category: "finishing", description: "Painting", uom: "sqft", quantity: 20, rate: 100 }],
       },
+      null,
       ADMIN,
     );
     await contractsAdapter.sendForAcceptance(contract.id, ADMIN);
     await contractsAdapter.respond(contract.id, "declined", CUSTOMER, "Not now");
 
-    const revised = await contractsAdapter.update(contract.id, { notes: "Revised after decline" }, ADMIN);
+    const revised = await contractsAdapter.update(contract.id, { notes: "Revised after decline" }, null, ADMIN);
     expect(revised.status).toBe("draft");
     expect(revised.declineReason).toBeNull();
 

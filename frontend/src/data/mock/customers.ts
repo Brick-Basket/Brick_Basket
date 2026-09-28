@@ -35,4 +35,24 @@ export const mockCustomers: Customer[] = [
     leadId: "lead_seed_14",
     createdAt: "2026-07-15T09:00:00.000Z",
   },
+  {
+    // Added alongside the Documents module's move to contract-scoped
+    // uploads — see mock/projects.ts's header comment and contract_7 below.
+    id: "cust_rohit_malhotra",
+    name: "Rohit Malhotra",
+    email: "rohit.m@example.com",
+    phone: "+91 91234 56789",
+    leadId: "lead_seed_2",
+    createdAt: "2026-09-02T08:00:00.000Z",
+  },
+  {
+    // Added alongside the Documents module's move to contract-scoped
+    // uploads — a directly-logged customer (no matching seeded Lead), see
+    // `Customer.leadId`'s doc comment and contract_8 below.
+    id: "cust_modern_residence",
+    name: "Owner, Modern Residence",
+    email: "modern.residence@example.com",
+    phone: "+91 90000 33344",
+    createdAt: "2026-06-20T09:00:00.000Z",
+  },
 ];

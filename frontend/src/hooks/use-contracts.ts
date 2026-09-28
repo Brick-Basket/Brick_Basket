@@ -114,15 +114,16 @@ function useMutation<Args extends unknown[], Result>(fn: (...args: Args) => Prom
 }
 
 export function useCreateContract() {
-  const { submit, status, error } = useMutation((input: CreateContractInput, actor: ContractActor) =>
-    contractsAdapter.create(input, actor),
+  const { submit, status, error } = useMutation(
+    (input: CreateContractInput, file: File | null, actor: ContractActor) => contractsAdapter.create(input, file, actor),
   );
   return { submit, status, error };
 }
 
 export function useUpdateContract() {
   const { submit, status, error } = useMutation(
-    (id: string, patch: UpdateContractInput, actor: ContractActor) => contractsAdapter.update(id, patch, actor),
+    (id: string, patch: UpdateContractInput, file: File | null | undefined, actor: ContractActor) =>
+      contractsAdapter.update(id, patch, file, actor),
   );
   return { submit, status, error };
 }

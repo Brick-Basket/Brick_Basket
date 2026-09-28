@@ -26,6 +26,7 @@ All routes exist as real files from Part 1 onward (placeholder page + correct la
 | `/dashboard/contracts` | My Contracts — list | 5 |
 | `/dashboard/contracts/[id]` | Contract detail — review/accept/decline | 5 |
 | `/dashboard/documents` | Drawings, certificates, warranty docs | 6 |
+| `/dashboard/site-updates` | Site Updates — daily photo/video feed from the field | Site Updates module, post-Part-20 |
 | `/dashboard/mrc` | Material Receipt Certificates — list, drafts filtered out | 12 |
 | `/dashboard/mrc/[id]` | MRC detail — review/accept/decline | 12 |
 | `/dashboard/payments` | Payment status/history (read) | 16 |
@@ -42,7 +43,8 @@ All routes exist as real files from Part 1 onward (placeholder page + correct la
 | `/admin/contracts/new` | Create contract | 5 |
 | `/admin/contracts/[id]` | Contract detail | 5 |
 | `/admin/contracts/[id]/edit` | Edit contract (draft/declined only) | 5 |
-| `/admin/documents` | Drawing & Document Management (admin side) | 6 |
+| `/admin/documents` | Contract Directory — search/filter contracts by city/package type, see document counts (owner corrections pass) | 6 |
+| `/admin/documents/[contractId]` | Documents for one contract — upload/list/Warranty Mapping, now the only place uploading happens (owner corrections pass) | 6 |
 | `/admin/vendors` | Vendor Management | 7 |
 | `/admin/supply-chain/ace` | Accepted Cost Estimate — list + create/edit dialog (permission-gated) | 8 |
 | `/admin/supply-chain/requisitions` | Purchase/Material Requisition — list | 8 |
@@ -71,6 +73,7 @@ All routes exist as real files from Part 1 onward (placeholder page + correct la
 | `/admin/project-management/dpr/new` | Create a DPR — manpower + work-item entry, optional Schedule-activity links | 14 |
 | `/admin/project-management/dpr/[id]` | DPR detail — manpower/work-item tables, computed previous/cumulative/% complete | 14 |
 | `/admin/project-management/dpr/[id]/edit` | Edit DPR (project fixed after creation) | 14 |
+| `/admin/project-management/site-updates` | Site Updates — post daily photos/videos, feed + "Post Update" dialog | Site Updates module, post-Part-20 |
 | `/admin/finance/project-cost` | Project Cost Accounting | 15 |
 | `/admin/finance/payments` | Payments & Receipts | 16 |
 | `/admin/finance/bank-cash` | Bank & Cash Management | 16 |
@@ -79,6 +82,7 @@ All routes exist as real files from Part 1 onward (placeholder page + correct la
 | `/admin/finance/gstr` | GSTR Financial Reporting | 17 |
 | `/admin/finance/cost-to-complete` | Cost-to-Complete | 18 |
 | `/admin/cost-management` | Placeholder — pending Pushkar Tiwari Excel spec | 18 |
+| `/admin/pricing-content` | Pricing & Packages Content — partially real: BOQ material/labor rate management (11 items, `pricing_content:view`/`pricing_content:manage`) is a working screen (see `docs/OPEN_QUESTIONS.md` #67); the broader package-pricing/comparison-table/estimator-assumptions scope is still a placeholder note, pending owner/backend decision (see `docs/OPEN_QUESTIONS.md` #65) | post-Part-20; BOQ rate management pass |
 
 Route constants are centralized in `src/lib/constants/routes.ts` — no component hardcodes a path string.
 

@@ -8,7 +8,7 @@ Track A of a two-track delivery. This repo contains:
 - The public marketing website.
 - The customer portal.
 - The internal operations application (leads → contract → vendors → procurement → store → schedule/DPR → finance).
-- A `/docs` contract package a separate backend developer/Claude session implements against — see `docs/BACKEND_CLAUDE_HANDOFF.md` (added once module contracts stabilize) and `docs/OPEN_QUESTIONS.md`.
+- A `/docs` contract package a separate backend developer/Claude session implements against — see `docs/BACKEND_CLAUDE_HANDOFF.md` (the specification, added once module contracts stabilized), `docs/BACKEND_ACTION_PLAN.md` (the phased build sequence — read this right after the handoff doc), and `docs/OPEN_QUESTIONS.md`.
 
 No production backend, database, or auth server lives in this repo. All data access goes through typed adapters in `src/lib/api/adapters`, currently backed by mock data in `src/data/mock`.
 
@@ -30,6 +30,7 @@ npm run typecheck
 - Roles/permissions: `docs/ROLES_AND_PERMISSIONS.md`
 - Data models: `docs/DATA_MODELS.md`
 - Build roadmap (part-by-part prompts): `docs/PART_PROMPTS.md`
+- Backend build sequence, start to finish: `docs/BACKEND_ACTION_PLAN.md`
 - Unresolved business rules: `docs/OPEN_QUESTIONS.md`
 - What changed and when: `docs/CHANGELOG.md`
 

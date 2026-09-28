@@ -30,7 +30,7 @@ import { buttonVariants } from "@/components/ui/button";
  * modal closes (no manual pause call needed — there's nothing to pause,
  * the element is gone).
  */
-export function WatchVideoButton({ embedUrl }: { embedUrl: string }) {
+export function WatchVideoButton({ embedUrl, label = "Watch Video" }: { embedUrl: string; label?: string }) {
   const [open, setOpen] = React.useState(false);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const titleId = React.useId();
@@ -54,7 +54,7 @@ export function WatchVideoButton({ embedUrl }: { embedUrl: string }) {
         onClick={() => setOpen(true)}
         className={buttonVariants({ variant: "outline", size: "lg" })}
       >
-        <PlayCircle className="h-4 w-4" aria-hidden /> Watch Video
+        <PlayCircle className="h-4 w-4" aria-hidden /> {label}
       </button>
 
       {open && (

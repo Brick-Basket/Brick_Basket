@@ -33,9 +33,29 @@ export interface Lead {
   email: string;
   phone: string;
   source: LeadSource;
-  /** Free-text subject/interest, e.g. "Villa construction enquiry". */
+  /** Free-text subject/interest, e.g. "Villa construction enquiry". Still captured on the form; the table/Kanban surface `city` instead — see correction #1 below. */
   subject: string;
   message: string;
+  /**
+   * City the enquiry is for. FRONTEND IMPLEMENTATION DECISION (owner
+   * correction, "in place of subject, city name should reflect"): added as
+   * a first-class, required field rather than replacing `subject` outright,
+   * since `subject`/`message` still carry real enquiry detail — only the
+   * table/Kanban *display* swapped from subject to city. Picked via
+   * `CityAutocomplete` (`src/components/ui/city-autocomplete.tsx`) on the
+   * form. See docs/OPEN_QUESTIONS.md.
+   */
+  city: string;
+  /**
+   * Date the enquiry was actually received, as opposed to `createdAt` (when
+   * the record was entered into the system — data entry can lag the real
+   * enquiry by days). FRONTEND IMPLEMENTATION DECISION per owner correction
+   * #3 ("lead data entry can be done on any date but same should reflect
+   * with actual date of receipt") — stored as a plain `YYYY-MM-DD` date
+   * string, editable on the create form, defaulting to today. See
+   * docs/OPEN_QUESTIONS.md.
+   */
+  receivedDate: string;
   status: LeadStatus;
   /**
    * Staff user id the lead is assigned to, or null when unassigned. Sourced
@@ -47,12 +67,25 @@ export interface Lead {
   updatedAt: string;
 }
 
-/** Payload the public Contact form submits — server assigns id/status/timestamps/assignedTo. */
-export type CreateLeadInput = Pick<Lead, "name" | "email" | "phone" | "subject" | "message"> & {
-  source: LeadSource;
-};
+/**
+ * Payload the public Contact form (and the admin "New Lead" form) submits —
+ * server assigns id/status/timestamps/assignedTo. `city`/`receivedDate` are
+ * optional here (rather than required, as they are on `Lead` itself)
+ * specifically so the public marketing-site Contact form and Cost Estimator
+ * enquiry (`src/components/marketing/contact-form.tsx`,
+ * `cost-estimator-section.tsx`) — out of scope for the owner's Lead
+ * Management corrections, which are about the internal admin module —
+ * don't need a city/date field added to keep compiling. `leadsAdapter.create`
+ * fills sensible defaults when they're omitted (empty city, today's date);
+ * the admin `LeadForm` requires both explicitly via its own zod schema. See
+ * docs/OPEN_QUESTIONS.md.
+ */
+export type CreateLeadInput = Pick<Lead, "name" | "email" | "phone" | "subject" | "message"> &
+  Partial<Pick<Lead, "city" | "receivedDate">> & {
+    source: LeadSource;
+  };
 
 /** Fields the admin Lead Management UI (Part 4) may update after creation. */
 export type UpdateLeadInput = Partial<
-  Pick<Lead, "name" | "email" | "phone" | "subject" | "message" | "assignedTo">
+  Pick<Lead, "name" | "email" | "phone" | "subject" | "message" | "city" | "receivedDate" | "assignedTo">
 >;

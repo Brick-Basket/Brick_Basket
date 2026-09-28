@@ -49,6 +49,16 @@ Not user-configurable — a fixed two-value discriminator, not a business status
 | `design_consultancy` | Design & Consultancy |
 | `other` | Other |
 
+## Contract.contractCategory / ContractCategoryType (Part 5, added — Sales & Contract corrections pass)
+
+**Owner-named, not CONFIGURABLE in the same open-ended sense as the line-item category above** — the owner's correction #4 explicitly names these three values ("IHB/Large construction or special services should reflect"). A NEW, contract-level field, deliberately kept distinct from `ContractLineItem.category`/`ContractCategory` above — the two classify different things (the whole contract vs. an individual BOQ-style line) and were never meant to be merged. Source of truth: `src/types/domain/contract.ts`'s `ContractCategoryType` union and `src/components/contracts/contract-category-type-config.ts`. See `docs/OPEN_QUESTIONS.md` #71/#72.
+
+| Value | Label (UI) | Drives |
+|---|---|---|
+| `ihb` | Individual House Building (IHB) | requires `Contract.packageCriteria` (a `CONSTRUCTION_PACKAGES` slug — Essential/Smart/Premium/Signature) |
+| `large_construction` | Large Construction | requires `Contract.servicesDescription` (free text, "capture all services") |
+| `special_services` | Special Services | neither conditional field required |
+
 ## ContractAuditEntry.action (Part 5)
 
 Not user-configurable — a fixed discriminator matching `ContractsAdapter`'s mutating methods 1:1, never authored directly by a user (unlike `LeadActivity.type: "note"`).
