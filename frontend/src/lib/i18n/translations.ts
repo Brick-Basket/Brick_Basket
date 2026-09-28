@@ -86,7 +86,8 @@ const en = {
   },
   hero: {
     title: "Building {{Stronger Spaces}} for a Better Tomorrow",
-    subtitle: "Premium construction and real estate solutions built on trust, transparency and quality.",
+    subtitle:
+      "Premium construction and real estate solutions built on trust, transparency and quality.",
     exploreServices: "Explore Services",
     watchVideo: "Watch Video",
   },
@@ -148,7 +149,8 @@ const en = {
       subject: "Subject",
       chooseSubject: "Choose a subject",
       messageLabel: "Your Message / Objective",
-      messagePlaceholder: "Tell us a bit about your project or what you'd like help with (optional)",
+      messagePlaceholder:
+        "Tell us a bit about your project or what you'd like help with (optional)",
       send: "Send Message",
       sentTitle: "Message sent",
       sentBody: "Thanks for reaching out. We’ll review your enquiry and get back to you.",
@@ -213,7 +215,8 @@ const en = {
     modeBasicHint: "I just know my plot area",
     modeAllHint: "I have my exact built-up/plinth area",
     plotAreaLabel: "Plot Area (sqft)",
-    plotAreaHint: "The total area of land you own, including the footprint of any structures on it.",
+    plotAreaHint:
+      "The total area of land you own, including the footprint of any structures on it.",
     groundCoverageLabel: "Assumed Ground Coverage",
     groundCoverageHint:
       "How much of your plot the building's footprint typically covers, after setbacks — this varies by city and plot size, so adjust it if you know your local rule.",
@@ -241,8 +244,10 @@ const en = {
     getDetailedQuote: "Get a Detailed, Site-Specific Quote",
     savePrint: "Save / Print This Estimate",
     downloadExcel: "Download as Excel",
-    enterPlotAreaPrompt: "Enter your plot area above to see an estimated cost for your selected package.",
-    enterPlinthAreaPrompt: "Enter your plinth area above to see an estimated cost for your selected package.",
+    enterPlotAreaPrompt:
+      "Enter your plot area above to see an estimated cost for your selected package.",
+    enterPlinthAreaPrompt:
+      "Enter your plinth area above to see an estimated cost for your selected package.",
     compareHeading: "Compare all packages for this size",
     estimatedCost: "Estimated Cost",
     includesHeading: "What this estimate includes",
@@ -272,7 +277,8 @@ const en = {
     csvLocation: "Project Location",
     csvEstimatedCost: "Estimated Cost",
     csvComparisonHeading: "Comparison — All Packages (same size)",
-    csvDisclaimer: "Indicative estimate only, not a final quote. Actual materials, brands and quantities are finalized against your specific structural drawings.",
+    csvDisclaimer:
+      "Indicative estimate only, not a final quote. Actual materials, brands and quantities are finalized against your specific structural drawings.",
     printedOn: "Printed on",
   },
 } as const satisfies Dict;
@@ -370,10 +376,12 @@ const hi = {
       subject: "विषय",
       chooseSubject: "एक विषय चुनें",
       messageLabel: "आपका संदेश / उद्देश्य",
-      messagePlaceholder: "अपने प्रोजेक्ट के बारे में थोड़ा बताएं या आपको किस चीज़ में मदद चाहिए (वैकल्पिक)",
+      messagePlaceholder:
+        "अपने प्रोजेक्ट के बारे में थोड़ा बताएं या आपको किस चीज़ में मदद चाहिए (वैकल्पिक)",
       send: "संदेश भेजें",
       sentTitle: "संदेश भेज दिया गया",
-      sentBody: "संपर्क करने के लिए धन्यवाद। हम आपकी पूछताछ की समीक्षा करेंगे और आपसे संपर्क करेंगे।",
+      sentBody:
+        "संपर्क करने के लिए धन्यवाद। हम आपकी पूछताछ की समीक्षा करेंगे और आपसे संपर्क करेंगे।",
       sendAnother: "एक और संदेश भेजें",
       errName: "अपना पूरा नाम दर्ज करें",
       errEmail: "एक मान्य ईमेल पता दर्ज करें",
@@ -405,7 +413,8 @@ const hi = {
   },
   packageSpecsAccordion: {
     heading: "पैकेज विनिर्देश",
-    description: "हर टियर में वास्तव में क्या शामिल है यह देखने के लिए किसी भी श्रेणी पर टैप करें — डिज़ाइन और संरचना से लेकर अंतिम फिनिशिंग टच तक।",
+    description:
+      "हर टियर में वास्तव में क्या शामिल है यह देखने के लिए किसी भी श्रेणी पर टैप करें — डिज़ाइन और संरचना से लेकर अंतिम फिनिशिंग टच तक।",
     disclaimer:
       "यह उदाहरण के तौर पर दिखाई गई विनिर्देश श्रेणियां हैं, आपके प्रोजेक्ट के लिए तय की गई सटीक सामग्री और ब्रांड का विकल्प नहीं — वे निर्माण शुरू होने से पहले सीधे आपके कॉन्ट्रैक्ट से जुड़ी होती हैं।",
     detailsNoteTitle: "विस्तृत सामग्री और ब्रांड विनिर्देश",
@@ -434,7 +443,8 @@ const hi = {
     modeBasicHint: "मुझे केवल अपने प्लॉट का क्षेत्रफल पता है",
     modeAllHint: "मेरे पास सटीक बिल्ट-अप/प्लिंथ क्षेत्रफल है",
     plotAreaLabel: "प्लॉट क्षेत्रफल (वर्ग फुट)",
-    plotAreaHint: "आपके स्वामित्व वाली भूमि का कुल क्षेत्रफल, जिसमें उस पर बनी किसी भी संरचना का फुटप्रिंट भी शामिल है।",
+    plotAreaHint:
+      "आपके स्वामित्व वाली भूमि का कुल क्षेत्रफल, जिसमें उस पर बनी किसी भी संरचना का फुटप्रिंट भी शामिल है।",
     groundCoverageLabel: "अनुमानित ग्राउंड कवरेज",
     groundCoverageHint:
       "सेटबैक के बाद आपके प्लॉट का कितना हिस्सा आमतौर पर भवन के फुटप्रिंट में आता है — यह शहर और प्लॉट के आकार के अनुसार बदलता है, इसलिए यदि आप अपना स्थानीय नियम जानते हैं तो इसे समायोजित करें।",
@@ -446,7 +456,8 @@ const hi = {
     ownsLandLegend: "क्या आपके पास पहले से ज़मीन का प्लॉट है?",
     yes: "हां",
     no: "नहीं",
-    noLandNote: "अभी ज़मीन नहीं है? हमारी लैंड परचेज़ सेवा पहले सही प्लॉट खोजने में आपकी मदद कर सकती है।",
+    noLandNote:
+      "अभी ज़मीन नहीं है? हमारी लैंड परचेज़ सेवा पहले सही प्लॉट खोजने में आपकी मदद कर सकती है।",
     noLandNotePre: "अभी ज़मीन नहीं है? हमारी",
     noLandNotePost: "सेवा पहले सही प्लॉट खोजने में आपकी मदद कर सकती है।",
     landPurchaseLink: "लैंड परचेज़",
@@ -462,8 +473,10 @@ const hi = {
     getDetailedQuote: "विस्तृत, साइट-विशिष्ट कोटेशन प्राप्त करें",
     savePrint: "यह अनुमान सेव / प्रिंट करें",
     downloadExcel: "एक्सेल के रूप में डाउनलोड करें",
-    enterPlotAreaPrompt: "अपने चुने हुए पैकेज के लिए अनुमानित लागत देखने हेतु ऊपर अपना प्लॉट क्षेत्रफल दर्ज करें।",
-    enterPlinthAreaPrompt: "अपने चुने हुए पैकेज के लिए अनुमानित लागत देखने हेतु ऊपर अपना प्लिंथ क्षेत्रफल दर्ज करें।",
+    enterPlotAreaPrompt:
+      "अपने चुने हुए पैकेज के लिए अनुमानित लागत देखने हेतु ऊपर अपना प्लॉट क्षेत्रफल दर्ज करें।",
+    enterPlinthAreaPrompt:
+      "अपने चुने हुए पैकेज के लिए अनुमानित लागत देखने हेतु ऊपर अपना प्लिंथ क्षेत्रफल दर्ज करें।",
     compareHeading: "इस आकार के लिए सभी पैकेजों की तुलना करें",
     estimatedCost: "अनुमानित लागत",
     includesHeading: "इस अनुमान में क्या शामिल है",
@@ -473,7 +486,8 @@ const hi = {
     fullName: "पूरा नाम",
     mobileNumber: "मोबाइल नंबर",
     emailAddress: "ईमेल",
-    consentText: "मैं इस पूछताछ के संबंध में BrickBasket से संपर्क किए जाने और गोपनीयता नीति व नियम एवं शर्तों से सहमत हूं।",
+    consentText:
+      "मैं इस पूछताछ के संबंध में BrickBasket से संपर्क किए जाने और गोपनीयता नीति व नियम एवं शर्तों से सहमत हूं।",
     sendEstimate: "मेरा अनुमान टीम को भेजें",
     thanksTitle: "धन्यवाद — हमें आपका अनुमान मिल गया है",
     sendAnotherEnquiry: "एक और पूछताछ भेजें",
@@ -492,12 +506,13 @@ const hi = {
     csvLocation: "प्रोजेक्ट स्थान",
     csvEstimatedCost: "अनुमानित लागत",
     csvComparisonHeading: "तुलना — सभी पैकेज (समान आकार)",
-    csvDisclaimer: "केवल सांकेतिक अनुमान, अंतिम कोटेशन नहीं। वास्तविक सामग्री, ब्रांड और मात्रा आपके विशिष्ट संरचनात्मक चित्रों के आधार पर अंतिम रूप से तय की जाएगी।",
+    csvDisclaimer:
+      "केवल सांकेतिक अनुमान, अंतिम कोटेशन नहीं। वास्तविक सामग्री, ब्रांड और मात्रा आपके विशिष्ट संरचनात्मक चित्रों के आधार पर अंतिम रूप से तय की जाएगी।",
     printedOn: "प्रिंट करने की तारीख़",
   },
 } as const satisfies Dict;
 
-export const UI_TEXT: Record<Lang, Dict> = { en, hi };
+export const UI_TEXT = { en, hi } satisfies Record<Lang, Dict>;
 
 function lookupPath(dict: Dict, path: string): string | undefined {
   const value = path.split(".").reduce<string | Dict | undefined>((acc, key) => {
@@ -540,17 +555,27 @@ export const ABOUT_STATS_HI: Record<string, string> = {
 
 /** About section core values (`CORE_VALUES` in about-section.tsx). */
 export const CORE_VALUES_HI: Record<string, { title: string; description: string }> = {
-  Transparency: { title: "पारदर्शिता", description: "हम खुले संवाद और ईमानदार व्यवहार में विश्वास रखते हैं।" },
-  Quality: { title: "गुणवत्ता", description: "हम सामग्री और काम की गुणवत्ता से कभी समझौता नहीं करते।" },
+  Transparency: {
+    title: "पारदर्शिता",
+    description: "हम खुले संवाद और ईमानदार व्यवहार में विश्वास रखते हैं।",
+  },
+  Quality: {
+    title: "गुणवत्ता",
+    description: "हम सामग्री और काम की गुणवत्ता से कभी समझौता नहीं करते।",
+  },
   Commitment: { title: "प्रतिबद्धता", description: "हम हर बार अपने वादे पूरे करते हैं।" },
-  Innovation: { title: "नवाचार", description: "हम आधुनिक तकनीकों को अपनाते हैं और बेहतर परिणाम देने का प्रयास करते हैं।" },
+  Innovation: {
+    title: "नवाचार",
+    description: "हम आधुनिक तकनीकों को अपनाते हैं और बेहतर परिणाम देने का प्रयास करते हैं।",
+  },
 };
 
 /** Confirmed services (`CONFIRMED_SERVICES` in public-site.ts). */
 export const SERVICES_HI: Record<string, { title: string; description: string }> = {
   "Project Finance": {
     title: "प्रोजेक्ट फाइनेंस",
-    description: "आपके सपनों के प्रोजेक्ट को आसानी और भरोसे के साथ हकीकत बनाने के लिए पूर्ण वित्तीय सहायता।",
+    description:
+      "आपके सपनों के प्रोजेक्ट को आसानी और भरोसे के साथ हकीकत बनाने के लिए पूर्ण वित्तीय सहायता।",
   },
   "Land Purchase": {
     title: "भूमि खरीद",
@@ -558,11 +583,13 @@ export const SERVICES_HI: Record<string, { title: string; description: string }>
   },
   "Vaastu Services": {
     title: "वास्तु सेवाएं",
-    description: "आपके स्थान में सामंजस्य, सकारात्मकता और समृद्धि लाने के लिए विशेषज्ञ वास्तु मार्गदर्शन।",
+    description:
+      "आपके स्थान में सामंजस्य, सकारात्मकता और समृद्धि लाने के लिए विशेषज्ञ वास्तु मार्गदर्शन।",
   },
   "Planning & Architectural Services": {
     title: "योजना एवं वास्तुशिल्प सेवाएं",
-    description: "कार्यात्मक और सुंदर स्थानों के लिए रचनात्मक वास्तुशिल्प डिज़ाइन और स्मार्ट योजना।",
+    description:
+      "कार्यात्मक और सुंदर स्थानों के लिए रचनात्मक वास्तुशिल्प डिज़ाइन और स्मार्ट योजना।",
   },
   "Pest Control & Waterproofing": {
     title: "पेस्ट कंट्रोल एवं वॉटरप्रूफिंग",
@@ -570,7 +597,8 @@ export const SERVICES_HI: Record<string, { title: string; description: string }>
   },
   "Construction & Interior Services": {
     title: "निर्माण एवं इंटीरियर सेवाएं",
-    description: "उच्च गुणवत्ता वाले निर्माण के साथ बेहतरीन ढंग से तैयार किए गए सुरुचिपूर्ण इंटीरियर।",
+    description:
+      "उच्च गुणवत्ता वाले निर्माण के साथ बेहतरीन ढंग से तैयार किए गए सुरुचिपूर्ण इंटीरियर।",
   },
   "Rain Water Harvesting": {
     title: "वर्षा जल संचयन",
@@ -599,15 +627,18 @@ export const CONTACT_SUBJECT_HI: Record<string, string> = {
 export const HOW_IT_WORKS_STEPS_HI: Record<string, { title: string; description: string }> = {
   "Enquiry & Consultation": {
     title: "पूछताछ एवं परामर्श",
-    description: "हमें अपने प्रोजेक्ट के बारे में बताएं — हम आपके लक्ष्यों, बजट और समय-सीमा को समझते हैं।",
+    description:
+      "हमें अपने प्रोजेक्ट के बारे में बताएं — हम आपके लक्ष्यों, बजट और समय-सीमा को समझते हैं।",
   },
   "Land Purchase (if needed)": {
     title: "भूमि खरीद (यदि आवश्यक हो)",
-    description: "आपके निवेश के लिए सही ज़मीन खोजने और उसका मूल्यांकन करने में हम आपकी मदद करते हैं।",
+    description:
+      "आपके निवेश के लिए सही ज़मीन खोजने और उसका मूल्यांकन करने में हम आपकी मदद करते हैं।",
   },
   "Vastu & Site Assessment": {
     title: "वास्तु एवं साइट मूल्यांकन",
-    description: "डिज़ाइन का काम शुरू होने से पहले विशेषज्ञ वास्तु मार्गदर्शन को शामिल किया जाता है।",
+    description:
+      "डिज़ाइन का काम शुरू होने से पहले विशेषज्ञ वास्तु मार्गदर्शन को शामिल किया जाता है।",
   },
   "Planning & Design": {
     title: "योजना एवं डिज़ाइन",
@@ -631,7 +662,8 @@ export const WHY_US_REASONS_HI: Record<string, { title: string; description: str
   },
   "Quality Assurance": {
     title: "गुणवत्ता आश्वासन",
-    description: "हम प्रीमियम गुणवत्ता वाली सामग्री का उपयोग करते हैं और हर चरण में सख्त गुणवत्ता नियंत्रण का पालन करते हैं।",
+    description:
+      "हम प्रीमियम गुणवत्ता वाली सामग्री का उपयोग करते हैं और हर चरण में सख्त गुणवत्ता नियंत्रण का पालन करते हैं।",
   },
   "Transparent Process": {
     title: "पारदर्शी प्रक्रिया",
@@ -669,36 +701,47 @@ export const PROJECT_TITLE_HI: Record<string, string> = {
 };
 
 /** "Traditional Way vs. BrickBasket Way" rows (`OLD_WAY_VS_OUR_WAY_ROWS` in public-site.ts). */
-export const COMPARISON_ROWS_HI: Record<string, { dimension: string; traditional: string; brickBasket: string }> = {
+export const COMPARISON_ROWS_HI: Record<
+  string,
+  { dimension: string; traditional: string; brickBasket: string }
+> = {
   "Getting a cost estimate": {
     dimension: "लागत अनुमान प्राप्त करना",
     traditional: "एक लंप-सम आंकड़ा, जिसमें यह देखने का कोई तरीका नहीं कि वह कैसे निकाला गया।",
-    brickBasket: "एक लाइव, विस्तृत अनुमान — किसी भी जानकारी को साझा करने से पहले हर पैकेज टियर की असली दर एक साथ देखें।",
+    brickBasket:
+      "एक लाइव, विस्तृत अनुमान — किसी भी जानकारी को साझा करने से पहले हर पैकेज टियर की असली दर एक साथ देखें।",
   },
   "Understanding your budget": {
     dimension: "अपना बजट समझना",
     traditional: "एक ही “सामग्री एवं श्रम” लाइन, जिस पर आपको भरोसा करना पड़ता है।",
-    brickBasket: "स्पष्ट, श्रेणी-दर-श्रेणी विनिर्देश — तय करने से पहले डिज़ाइन, संरचना और हर अन्य श्रेणी में टियर के हिसाब से बिल्कुल देखें कि क्या शामिल है।",
+    brickBasket:
+      "स्पष्ट, श्रेणी-दर-श्रेणी विनिर्देश — तय करने से पहले डिज़ाइन, संरचना और हर अन्य श्रेणी में टियर के हिसाब से बिल्कुल देखें कि क्या शामिल है।",
   },
   "Contracts & sign-off": {
     dimension: "कॉन्ट्रैक्ट एवं हस्ताक्षर",
-    traditional: "एक मौखिक समझ, या व्यक्तिगत रूप से लिया गया हस्ताक्षर जिसे बाद में दोबारा नहीं देखा जा सकता।",
-    brickBasket: "एक दस्तावेज़ीकृत कॉन्ट्रैक्ट जिसे आप ऑनलाइन समीक्षा और स्वीकार करते हैं, हर संस्करण और निर्णय के समय-चिह्नित इतिहास के साथ।",
+    traditional:
+      "एक मौखिक समझ, या व्यक्तिगत रूप से लिया गया हस्ताक्षर जिसे बाद में दोबारा नहीं देखा जा सकता।",
+    brickBasket:
+      "एक दस्तावेज़ीकृत कॉन्ट्रैक्ट जिसे आप ऑनलाइन समीक्षा और स्वीकार करते हैं, हर संस्करण और निर्णय के समय-चिह्नित इतिहास के साथ।",
   },
   "Drawings, certificates & warranties": {
     dimension: "चित्र, प्रमाणपत्र एवं वारंटी",
-    traditional: "एक ट्यूब में कागज़ी चित्र, एक फ़ोल्डर में रसीदें — उम्मीद करें कि ज़रूरत पड़ने से पहले कुछ खो न जाए।",
-    brickBasket: "हर चित्र, सामग्री प्रमाणपत्र और वारंटी दस्तावेज़ आपके पोर्टल में एक ही जगह, हमेशा नवीनतम संस्करण में।",
+    traditional:
+      "एक ट्यूब में कागज़ी चित्र, एक फ़ोल्डर में रसीदें — उम्मीद करें कि ज़रूरत पड़ने से पहले कुछ खो न जाए।",
+    brickBasket:
+      "हर चित्र, सामग्री प्रमाणपत्र और वारंटी दस्तावेज़ आपके पोर्टल में एक ही जगह, हमेशा नवीनतम संस्करण में।",
   },
   "What actually went into your home": {
     dimension: "आपके घर में वास्तव में क्या लगा",
     traditional: "कमरे-दर-कमरे किस सामग्री या मेक का उपयोग हुआ, इसका कोई औपचारिक रिकॉर्ड नहीं।",
-    brickBasket: "एक मटीरियल रिसीट सर्टिफिकेट जो बताता है क्या उपयोग हुआ और उसकी वारंटी शर्तें क्या हैं — आपकी समीक्षा और स्वीकृति के लिए।",
+    brickBasket:
+      "एक मटीरियल रिसीट सर्टिफिकेट जो बताता है क्या उपयोग हुआ और उसकी वारंटी शर्तें क्या हैं — आपकी समीक्षा और स्वीकृति के लिए।",
   },
   "Staying updated": {
     dimension: "अपडेट रहना",
     traditional: "आप कॉल करते हैं, और किसी के वापस कॉल करने का इंतज़ार करते हैं।",
-    brickBasket: "समीक्षा के लिए कुछ भी होते ही स्वतः सूचनाएं — स्वीकार करने के लिए एक कॉन्ट्रैक्ट, जांचने के लिए एक प्रमाणपत्र — सीधे आपके पोर्टल में।",
+    brickBasket:
+      "समीक्षा के लिए कुछ भी होते ही स्वतः सूचनाएं — स्वीकार करने के लिए एक कॉन्ट्रैक्ट, जांचने के लिए एक प्रमाणपत्र — सीधे आपके पोर्टल में।",
   },
 };
 
@@ -711,23 +754,28 @@ export const FAQ_HI: Record<string, { question: string; answer: string }> = {
   },
   "How do I get started with a project?": {
     question: "मैं अपना प्रोजेक्ट कैसे शुरू करूं?",
-    answer: "अपने प्रोजेक्ट के बारे में कुछ जानकारी के साथ हमारे Contact पेज के ज़रिए संपर्क करें। हमारी टीम आपके लक्ष्यों को समझने और अगले चरणों में आपकी मदद करने के लिए फॉलो-अप करेगी।",
+    answer:
+      "अपने प्रोजेक्ट के बारे में कुछ जानकारी के साथ हमारे Contact पेज के ज़रिए संपर्क करें। हमारी टीम आपके लक्ष्यों को समझने और अगले चरणों में आपकी मदद करने के लिए फॉलो-अप करेगी।",
   },
   "Does BrickBasket help with financing?": {
     question: "क्या BrickBasket वित्तपोषण में मदद करता है?",
-    answer: "हां — हमारी प्रोजेक्ट फाइनेंस सेवा आपके प्रोजेक्ट के लिए फंडिंग की संरचना तैयार करने में सहायता प्रदान करती है। अपनी स्थिति के अनुसार क्या संभव है, यह जानने के लिए संपर्क करें।",
+    answer:
+      "हां — हमारी प्रोजेक्ट फाइनेंस सेवा आपके प्रोजेक्ट के लिए फंडिंग की संरचना तैयार करने में सहायता प्रदान करती है। अपनी स्थिति के अनुसार क्या संभव है, यह जानने के लिए संपर्क करें।",
   },
   "What is Vastu Services and is it mandatory?": {
     question: "वास्तु सेवाएं क्या हैं और क्या यह अनिवार्य है?",
-    answer: "वास्तु सेवाएं आपकी साइट और डिज़ाइन योजना में पारंपरिक वास्तु सिद्धांतों को शामिल करती हैं। यह उन ग्राहकों के लिए हमारी प्रक्रिया के हिस्से के रूप में उपलब्ध है जो इसे अपने प्रोजेक्ट में शामिल करना चाहते हैं।",
+    answer:
+      "वास्तु सेवाएं आपकी साइट और डिज़ाइन योजना में पारंपरिक वास्तु सिद्धांतों को शामिल करती हैं। यह उन ग्राहकों के लिए हमारी प्रक्रिया के हिस्से के रूप में उपलब्ध है जो इसे अपने प्रोजेक्ट में शामिल करना चाहते हैं।",
   },
   "Which locations does BrickBasket serve?": {
     question: "BrickBasket किन स्थानों पर सेवा देता है?",
-    answer: "हमने कई राज्यों में प्रोजेक्ट पूरे किए हैं — अपने स्थान के साथ हमसे संपर्क करें और हम आपके प्रोजेक्ट के लिए व्यवहार्यता की पुष्टि करेंगे।",
+    answer:
+      "हमने कई राज्यों में प्रोजेक्ट पूरे किए हैं — अपने स्थान के साथ हमसे संपर्क करें और हम आपके प्रोजेक्ट के लिए व्यवहार्यता की पुष्टि करेंगे।",
   },
   "What happens after construction is complete?": {
     question: "निर्माण पूरा होने के बाद क्या होता है?",
-    answer: "हैंडओवर आपके कॉन्ट्रैक्ट और प्रोजेक्ट रिकॉर्ड के माध्यम से दस्तावेज़ीकृत किया जाता है, और बाद में कोई प्रश्न आने पर हमारी टीम संपर्क में रहती है — Contact के ज़रिए पहुंचें और हम मदद करेंगे।",
+    answer:
+      "हैंडओवर आपके कॉन्ट्रैक्ट और प्रोजेक्ट रिकॉर्ड के माध्यम से दस्तावेज़ीकृत किया जाता है, और बाद में कोई प्रश्न आने पर हमारी टीम संपर्क में रहती है — Contact के ज़रिए पहुंचें और हम मदद करेंगे।",
   },
 };
 
@@ -739,7 +787,8 @@ export const PACKAGE_HI: Record<
   essential: {
     coreFeatures:
       "हमारे वेब/ऐप प्लेटफ़ॉर्म के ज़रिए बजटिंग और क्रियान्वयन, वास्तु-एकीकृत योजना, निर्धारित इंजीनियरिंग विज़िट, और प्रतिस्पर्धी मूल्य।",
-    bestFor: "मानक निर्माण के लिए सुव्यवस्थित, भरोसेमंद और किफ़ायती तरीका चाहने वाले घर के मालिकों के लिए।",
+    bestFor:
+      "मानक निर्माण के लिए सुव्यवस्थित, भरोसेमंद और किफ़ायती तरीका चाहने वाले घर के मालिकों के लिए।",
     newAtThisTier: [
       "वेब/ऐप-आधारित बजटिंग एवं क्रियान्वयन ट्रैकिंग",
       "वास्तु-एकीकृत योजना",
@@ -749,7 +798,8 @@ export const PACKAGE_HI: Record<
   smart: {
     coreFeatures:
       "Essential में सब कुछ, साथ ही अत्याधुनिक 3D लेयरिंग विज़ुअलाइज़ेशन, नियमित गुणवत्ता आश्वासन टूल रीडिंग, और विस्तृत प्रगति जानकारी।",
-    bestFor: "आधुनिक निर्माण के लिए बेहतर डिज़ाइन विज़ुअलाइज़ेशन और सख्त गुणवत्ता परीक्षण चाहने वाले ग्राहकों के लिए।",
+    bestFor:
+      "आधुनिक निर्माण के लिए बेहतर डिज़ाइन विज़ुअलाइज़ेशन और सख्त गुणवत्ता परीक्षण चाहने वाले ग्राहकों के लिए।",
     newAtThisTier: [
       "अत्याधुनिक 3D डिज़ाइन विज़ुअलाइज़ेशन",
       "नियमित गुणवत्ता-आश्वासन टूल रीडिंग",
@@ -759,7 +809,8 @@ export const PACKAGE_HI: Record<
   premium: {
     coreFeatures:
       "Smart में सब कुछ, साथ ही निरंतर निगरानी के लिए एक समर्पित साइट मैनेजर, व्यक्तिगत लेयरिंग विकल्प, और संपूर्ण एंड-टू-एंड लाइफसाइकल सहायता।",
-    bestFor: "व्यावहारिक, प्रीमियम प्रोजेक्ट प्रबंधन और हर विवरण पर पूर्ण ध्यान चाहने वाले लोगों के लिए।",
+    bestFor:
+      "व्यावहारिक, प्रीमियम प्रोजेक्ट प्रबंधन और हर विवरण पर पूर्ण ध्यान चाहने वाले लोगों के लिए।",
     newAtThisTier: [
       "समर्पित साइट मैनेजर (निरंतर ऑन-साइट निगरानी)",
       "व्यक्तिगत लेयरिंग/डिज़ाइन विकल्प",
@@ -769,7 +820,8 @@ export const PACKAGE_HI: Record<
   signature: {
     coreFeatures:
       "पूर्णतः अनुकूलित वास्तुशिल्प सेवाएं, एकीकृत प्लॉट-खोज एवं वित्तीय सहायता, विशेष इंटीरियर लेयरिंग, और अधिकतम वैल्यू इंजीनियरिंग।",
-    bestFor: "शुरू से अंत तक पूरी तरह अनुकूलित, ऑल-इनक्लूसिव लक्ज़री अनुभव चाहते हुए एक पूर्णतः अनूठा सपनों का घर बनाने वालों के लिए।",
+    bestFor:
+      "शुरू से अंत तक पूरी तरह अनुकूलित, ऑल-इनक्लूसिव लक्ज़री अनुभव चाहते हुए एक पूर्णतः अनूठा सपनों का घर बनाने वालों के लिए।",
     newAtThisTier: [
       "पूर्णतः अनुकूलित वास्तुशिल्प सेवाएं",
       "एकीकृत प्लॉट-खोज एवं वित्तीय सहायता",
@@ -780,7 +832,10 @@ export const PACKAGE_HI: Record<
 };
 
 /** Package comparison rows (`PACKAGE_COMPARISON_ROWS` in public-site.ts), keyed by dimension, values keyed by package slug. */
-export const PACKAGE_COMPARISON_ROWS_HI: Record<string, { dimension: string; values: Record<string, string> }> = {
+export const PACKAGE_COMPARISON_ROWS_HI: Record<
+  string,
+  { dimension: string; values: Record<string, string> }
+> = {
   "Design & Planning": {
     dimension: "डिज़ाइन एवं योजना",
     values: {
