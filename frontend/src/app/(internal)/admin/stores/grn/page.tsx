@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
 import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useGRNs } from "@/hooks/use-grn";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { GRNFilters } from "@/components/grn/grn-filters";
 import { GRNTable } from "@/components/grn/grn-table";
 import { ADMIN_ROUTES } from "@/lib/constants/routes";
@@ -35,6 +36,30 @@ export default function AdminGRNPage() {
 function AdminGRNContent() {
   const router = useRouter();
   const [filters, setFilters] = useState<GRNListParams>({ page: 1, pageSize: PAGE_SIZE, sortBy: "receivedAt", sortDir: "desc" });
+
+  // BrickBasket "Global Project Selector" correction: this page's own
+  // project filter follows the shared `ProjectProvider` selection on
+  // every change — not just once on load — so switching the project in
+  // the admin topbar while already on this page actually does
+  // something. That following stops the moment the user touches this
+  // page's own project filter directly (a specific project OR "All
+  // projects" — both count): from then on it's independently the
+  // user's own choice for the rest of this visit. A fresh visit
+  // (this component remounts on navigation) always re-seeds from
+  // whatever is currently shared.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: GRNListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
+
   const { status, error, result, refetch } = useGRNs(filters);
 
   const handleSortChange = (key: string) => {
@@ -60,7 +85,7 @@ function AdminGRNContent() {
         </PermissionGuard>
       </div>
 
-      <GRNFilters value={filters} onChange={setFilters} />
+      <GRNFilters value={filters} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

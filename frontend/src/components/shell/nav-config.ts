@@ -66,31 +66,50 @@ export const ADMIN_NAV: NavGroup[] = [
       { label: "Leads", href: ADMIN_ROUTES.leads, icon: Users, permission: "leads:read" },
       { label: "Contracts", href: ADMIN_ROUTES.contracts, icon: FileSignature, permission: "contracts:read" },
       { label: "Documents", href: ADMIN_ROUTES.documents, icon: FileText, permission: "documents:read" },
+      { label: "Customers", href: ADMIN_ROUTES.customers, icon: UserCircle, permission: "customers:read" },
     ],
   },
   {
+    // Document 2 "flow of channel" correction: the procurement chain here
+    // reads in its own left-to-right order — Vendors (who can supply) →
+    // Accepted Cost Estimate (what a fair rate is) → Supply/Service
+    // Requirement (what's needed) → RFQ (compare vendor quotes against
+    // it) → Purchase Order (commit to one). The nav item itself is
+    // relabeled "Supply/Service Requirement" (was "Requisitions") — a
+    // deliberate UI-label-only rename, see
+    // src/app/(internal)/admin/supply-chain/requisitions/page.tsx's
+    // header comment for why the underlying route/type/permission names
+    // are intentionally left alone.
     label: "Vendors & Supply Chain",
     items: [
-      { label: "Vendors", href: ADMIN_ROUTES.vendors, icon: Truck, permission: "vendors:read" },
+      { label: "Vendor Management", href: ADMIN_ROUTES.vendors, icon: Truck, permission: "vendors:read" },
       { label: "Accepted Cost Estimate", href: ADMIN_ROUTES.ace, icon: ClipboardList, permission: "ace:read" },
-      { label: "Requisitions", href: ADMIN_ROUTES.requisitions, icon: FileSearch, permission: "requisitions:read" },
+      { label: "Supply/Service Requirement", href: ADMIN_ROUTES.requisitions, icon: FileSearch, permission: "requisitions:read" },
       { label: "RFQs", href: ADMIN_ROUTES.rfqs, icon: FileSearch, permission: "rfq:read" },
       { label: "Purchase Orders", href: ADMIN_ROUTES.purchaseOrders, icon: ShoppingCart, permission: "po:read" },
     ],
   },
   {
+    // Document 2 "flow of channel" correction: this group previously
+    // listed Material Requisitions (MR) last, after Stock Statement,
+    // Wastage and Material Receipts — but Document 1's own procurement
+    // chain places MR immediately after GRN and before the Stock
+    // Statement (GRN → MR → Stock → Wastage → MRC). Reordered to match;
+    // no route/permission/label text changed, only the array order
+    // (breadcrumbs derive from this same list, so they follow
+    // automatically — see src/components/shell/breadcrumbs.tsx).
     label: "Stores",
     items: [
       { label: "GRN", href: ADMIN_ROUTES.grn, icon: PackageCheck, permission: "grn:read" },
-      { label: "Stock Statement", href: ADMIN_ROUTES.stock, icon: Boxes, permission: "stock:read" },
-      { label: "Wastage", href: ADMIN_ROUTES.wastage, icon: Trash2, permission: "wastage:read" },
-      { label: "Material Receipts", href: ADMIN_ROUTES.mrc, icon: BadgeCheck, permission: "mrc:read" },
       {
         label: "Material Requisitions (MR)",
         href: ADMIN_ROUTES.storeRequisitions,
         icon: ClipboardList,
         permission: "store_requisitions:read",
       },
+      { label: "Stock Statement", href: ADMIN_ROUTES.stock, icon: Boxes, permission: "stock:read" },
+      { label: "Wastage", href: ADMIN_ROUTES.wastage, icon: Trash2, permission: "wastage:read" },
+      { label: "Material Receipts", href: ADMIN_ROUTES.mrc, icon: BadgeCheck, permission: "mrc:read" },
     ],
   },
   {

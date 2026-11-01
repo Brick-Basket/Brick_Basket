@@ -8,7 +8,9 @@ import { buttonVariants } from "@/components/ui/button";
 import { Logo } from "@/components/brand/logo";
 import { useSession } from "@/components/providers/auth-provider";
 import { useLanguage } from "@/components/providers/language-provider";
+import { useTheme } from "@/components/providers/theme-provider";
 import { LanguageSwitcher } from "@/components/marketing/language-switcher";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { MAIN_NAV, PUBLIC_ROUTES, PORTAL_ROUTES, ADMIN_ROUTES } from "@/lib/constants/routes";
 import { cn } from "@/lib/utils/cn";
 
@@ -56,6 +58,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { status, session } = useSession();
   const { t } = useLanguage();
+  const { theme } = useTheme();
   const isHome = pathname === PUBLIC_ROUTES.home;
   const [activeSection, setActiveSection] = useState("home");
 
@@ -111,17 +114,26 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         <Link href={PUBLIC_ROUTES.home} aria-label="BrickBasket home">
-          <Logo variant="light" size="md" />
+          {/* FRONTEND FIX (dark mode): this header's background is
+              `bg-surface`, which flips dark in dark mode (see globals.css's
+              `:root.dark`) — the "light" logo variant is a dark-charcoal-
+              colored wordmark meant for a light surface, so left fixed at
+              "light" it would go illegible against the now-dark header.
+              Every other `<Logo variant="dark">` call site (footer, mobile
+              nav drawer, admin/portal sidebar) already sits on the brand's
+              fixed-charcoal background in both themes, so only this one
+              needed to become theme-aware. */}
+          <Logo variant={theme === "dark" ? "dark" : "light"} size="md" />
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Main">
+        <nav className="hidden items-center gap-5 lg:flex xl:gap-6" aria-label="Main">
           {MAIN_NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
               className={cn(
-                "text-sm font-medium hover:text-brand-red",
+                "shrink-0 whitespace-nowrap text-[13px] font-medium hover:text-brand-red xl:text-sm",
                 isActive(item.href) ? "text-brand-red" : "text-ink",
               )}
             >
@@ -130,23 +142,24 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-4 md:flex">
+        <div className="hidden shrink-0 items-center gap-3 lg:flex xl:gap-4">
+          <ThemeToggle />
           <LanguageSwitcher />
           <Link
             href={accountHref}
-            className="flex items-center gap-1.5 text-sm font-medium text-ink hover:text-brand-red"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap text-[13px] font-medium text-ink hover:text-brand-red xl:text-sm"
           >
             <UserCircle className="h-4 w-4" aria-hidden />
             {accountLabel}
           </Link>
-          <Link href={PUBLIC_ROUTES.contact} className={buttonVariants({ size: "md" })}>
+          <Link href={PUBLIC_ROUTES.contact} className={cn(buttonVariants({ size: "md" }), "shrink-0 whitespace-nowrap")}>
             {t("nav.getQuote")}
           </Link>
         </div>
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink lg:hidden"
           aria-label={open ? t("nav.closeMenu") : t("nav.openMenu")}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
@@ -157,7 +170,7 @@ export function SiteHeader() {
 
       {open && (
         <nav
-          className="border-t border-border bg-surface md:hidden"
+          className="border-t border-border bg-surface lg:hidden"
           aria-label="Mobile"
         >
           <div className="container flex flex-col gap-1 py-3">
@@ -190,7 +203,10 @@ export function SiteHeader() {
             >
               {t("nav.getQuote")}
             </Link>
-            <LanguageSwitcher className="mt-3 self-start" />
+            <div className="mt-3 flex items-center gap-3">
+              <ThemeToggle />
+              <LanguageSwitcher />
+            </div>
           </div>
         </nav>
       )}

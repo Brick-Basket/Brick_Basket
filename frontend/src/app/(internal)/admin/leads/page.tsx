@@ -57,7 +57,7 @@ function LeadsPageContent() {
   const listParams: LeadListParams =
     view === "table" ? filters : { ...filters, page: 1, pageSize: KANBAN_PAGE_SIZE };
   const { status, error, result, refetch } = useLeads(listParams);
-  const { submit: transition } = useTransitionLead();
+  const { submit: transition, error: transitionError } = useTransitionLead();
 
   const handleSortChange = (key: string) => {
     setFilters((prev) => ({
@@ -70,9 +70,18 @@ function LeadsPageContent() {
   const handleKanbanStatusChange = async (lead: Lead, next: LeadStatus) => {
     if (next === lead.status) return;
     setBusyLeadId(lead.id);
-    await transition(lead.id, next);
+    // BUG FIX: this used to call refetch() unconditionally, regardless of
+    // whether `transition` actually succeeded. useTransitionLead() follows
+    // this codebase's catch-and-return-null-on-failure convention — a
+    // rejected transition resolved to `null` with zero visible error, and
+    // the Kanban's status <Select> (controlled by `lead.status`) just
+    // reverted to its old value with no indication a click did anything.
+    // Gated on the result the same way po-detail.tsx/contract-detail.tsx's
+    // mutations already are (docs/OPEN_QUESTIONS.md #45), and the hook's
+    // `error` is now surfaced below the board on failure.
+    const result = await transition(lead.id, next);
     setBusyLeadId(null);
-    refetch();
+    if (result) refetch();
   };
 
   return (
@@ -155,12 +164,19 @@ function LeadsPageContent() {
         )}
 
         {status === "success" && result && result.items.length > 0 && view === "kanban" && (
-          <LeadKanban
-            leads={result.items}
-            onStatusChange={handleKanbanStatusChange}
-            onView={(lead) => setDetailLeadId(lead.id)}
-            busyLeadId={busyLeadId}
-          />
+          <>
+            {transitionError && (
+              <p role="alert" className="text-sm text-error">
+                {transitionError}
+              </p>
+            )}
+            <LeadKanban
+              leads={result.items}
+              onStatusChange={handleKanbanStatusChange}
+              onView={(lead) => setDetailLeadId(lead.id)}
+              busyLeadId={busyLeadId}
+            />
+          </>
         )}
       </div>
 

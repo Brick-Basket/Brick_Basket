@@ -1,10 +1,14 @@
 import type { ContractCategory } from "@/types/domain/contract";
 import type { CostToCompleteRow, CostToCompleteSummary } from "@/types/domain/cost-to-complete";
 import type { PurchaseOrderStatus } from "@/types/domain/purchase-order";
+import type { PurchaseRequisitionStatus } from "@/types/domain/requisition";
 import { costAdapter } from "@/lib/api/adapters/cost-adapter";
 import { aceAdapter } from "@/lib/api/adapters/ace-adapter";
 import { purchaseOrdersAdapter } from "@/lib/api/adapters/purchase-orders-adapter";
 import { rfqAdapter } from "@/lib/api/adapters/rfq-adapter";
+import { requisitionsAdapter } from "@/lib/api/adapters/requisitions-adapter";
+import { paymentAdapter } from "@/lib/api/adapters/payments-adapter";
+import { invoiceAdapter } from "@/lib/api/adapters/invoices-adapter";
 
 /**
  * Adapter boundary for the Cost-to-Complete report (Part 18, §8G). There
@@ -25,8 +29,22 @@ import { rfqAdapter } from "@/lib/api/adapters/rfq-adapter";
  * behind each source, and `docs/OPEN_QUESTIONS.md` #39 for the full list
  * of frontend decisions this required:**
  *
- * 1. `originalEstimate` (A) = that project+category's `CostEntry.budgetAmount` (0 if none).
- * 2. `completedToDate` (B) = that project+category's `CostEntry.actualAmount` (0 if none).
+ * 1. `originalEstimate` (A) = Σ(`ACEItem.rate` × `MaterialRequirement.quantity`) for every
+ *    `source: "predefined"` line on a non-rejected requisition for this project, traced to
+ *    a category via `MaterialRequirement.aceItemId` → `ACEItem.category` (spec-review
+ *    correction — a genuine ACE trace, replacing a flat `CostEntry.budgetAmount` read).
+ *    A category with no such requisition line yet falls back to that project+category's
+ *    `CostEntry.budgetAmount` (0 if neither exists) — `originalEstimateSource` records which.
+ * 2. `completedToDate` (B) = Σ every `Invoice` for this project, apportioned to this category
+ *    via its source `PurchaseOrder`'s own category mix (reusing the same per-PO breakdown step 3
+ *    below computes), when any exists, else that project+category's `CostEntry.actualAmount`
+ *    (0 if neither exists) — spec-review correction, matching the owner's own "vendor invoices"
+ *    wording; `completedToDateSource` on each row records which. An invoice whose PO has no
+ *    traceable category at all is summed into `unallocatedCompletedTotal` instead, mirroring
+ *    step 3's `unallocatedOrderedTotal`. A second, transparency-only pass apportions traced
+ *    vendor `Payment` (`direction: "payment"`) amounts the same way into `completedToDatePaid`/
+ *    `unallocatedPaidTotal` — cash actually paid, shown alongside (B) but never part of the
+ *    formula below, since a partially-paid invoice would otherwise understate "completed."
  * 3. `orderedTotal` = Σ `quantity × rate` of every line item on a non-`draft`/non-`rejected`
  *    Purchase Order for this project ("PO history"), traced to a category via
  *    `PurchaseOrder.rfqId` → `RFQLine` (matched by the line item's `rfqLineId`) →
@@ -75,14 +93,18 @@ const ORDERED_PO_STATUSES: PurchaseOrderStatus[] = [
   "issued",
 ];
 
+/** Requisitions counted toward "total material requirement identified for the site" (Original Estimate, A) — everything not rejected, same "past draft that wasn't rejected" spirit as `ORDERED_PO_STATUSES` above. */
+const ESTIMATE_REQUISITION_STATUSES: PurchaseRequisitionStatus[] = ["draft", "submitted", "approved"];
+
 class MockCostToCompleteAdapter implements CostToCompleteAdapter {
   async getSummary(projectId: string): Promise<CostToCompleteSummary> {
     await delay(350);
 
-    const [costResult, aceResult, poResult] = await Promise.all([
+    const [costResult, aceResult, poResult, requisitionResult] = await Promise.all([
       costAdapter.list({ projectId, pageSize: 200 }),
       aceAdapter.list({ projectId, pageSize: 200 }),
       purchaseOrdersAdapter.list({ projectId, pageSize: 200 }),
+      requisitionsAdapter.list({ projectId, pageSize: 200 }),
     ]);
 
     const costByCategory = new Map(costResult.items.map((c) => [c.category, c]));
@@ -97,17 +119,58 @@ class MockCostToCompleteAdapter implements CostToCompleteAdapter {
       ...aceResult.items.map((a) => a.category),
     ]);
 
+    // ACEItem lookups are shared across both traces below (Original
+    // Estimate, from requisition lines; ordered/completed value, from PO
+    // line items) — both ultimately resolve a `MaterialRequirement`'s or
+    // `RFQLine`'s `aceItemId` back to an `ACEItem`, so one cache serves
+    // both rather than hitting the adapter twice for the same id.
+    const aceItemCache = new Map<string, Awaited<ReturnType<typeof aceAdapter.get>>>();
+    async function getACEItem(aceItemId: string) {
+      if (!aceItemCache.has(aceItemId)) {
+        aceItemCache.set(aceItemId, await aceAdapter.get(aceItemId));
+      }
+      return aceItemCache.get(aceItemId) ?? null;
+    }
+
+    // Original Estimate (A): Σ(ACE rate × requisitioned quantity) for every
+    // predefined-source requisition line not on a rejected requisition —
+    // the project's actual identified material requirement, priced at its
+    // Accepted Cost Estimate rate. A category with no such line yet has no
+    // entry here and falls back to CostEntry.budgetAmount below.
+    const originalEstimateByCategory = new Map<ContractCategory, number>();
+    const estimableRequisitions = requisitionResult.items.filter((r) => ESTIMATE_REQUISITION_STATUSES.includes(r.status));
+    for (const requisition of estimableRequisitions) {
+      const lines = await requisitionsAdapter.listLines(requisition.id);
+      for (const line of lines) {
+        if (line.source !== "predefined" || !line.aceItemId) continue;
+        const aceItem = await getACEItem(line.aceItemId);
+        if (!aceItem) continue; // referenced ACE item no longer exists — nothing to attribute
+        categories.add(aceItem.category);
+        originalEstimateByCategory.set(
+          aceItem.category,
+          (originalEstimateByCategory.get(aceItem.category) ?? 0) + aceItem.rate * line.quantity,
+        );
+      }
+    }
+
     // Trace every "ordered" PO's line items back to an ACE category.
     const orderedPOs = poResult.items.filter((po) => ORDERED_PO_STATUSES.includes(po.status));
     const orderedByCategory = new Map<ContractCategory, number>();
     let unallocatedOrderedTotal = 0;
+
+    // Per-PO category breakdown — built alongside orderedByCategory above,
+    // for Completed till date (B) below to reuse: a Payment traces to an
+    // Invoice, an Invoice to one PO, but not to any one category (Invoice
+    // has no category field), so attributing a payment means knowing how
+    // *that specific PO's* own ordered value splits across categories.
+    const poCategoryBreakdown = new Map<string, Map<ContractCategory, number>>();
+    const poTraceableTotal = new Map<string, number>();
 
     // RFQ lines are fetched once per distinct source RFQ, not once per PO,
     // since several POs can share no RFQ but never the reverse (one RFQ ->
     // several vendor-grouped POs, Part 10) — still cheap either way for a
     // mock dataset, but this avoids redundant calls on a real backend join.
     const lineCache = new Map<string, Awaited<ReturnType<typeof rfqAdapter.listLines>>>();
-    const aceCategoryCache = new Map<string, ContractCategory | null>();
 
     for (const po of orderedPOs) {
       if (!lineCache.has(po.rfqId)) {
@@ -115,6 +178,9 @@ class MockCostToCompleteAdapter implements CostToCompleteAdapter {
       }
       const rfqLines = lineCache.get(po.rfqId) ?? [];
       const lineItems = await purchaseOrdersAdapter.listLineItems(po.id);
+
+      const perPoCategory = new Map<ContractCategory, number>();
+      let perPoTraceable = 0;
 
       for (const item of lineItems) {
         const amount = item.quantity * item.rate;
@@ -125,23 +191,94 @@ class MockCostToCompleteAdapter implements CostToCompleteAdapter {
           unallocatedOrderedTotal += amount;
           continue;
         }
-        if (!aceCategoryCache.has(aceItemId)) {
-          const aceItem = await aceAdapter.get(aceItemId);
-          aceCategoryCache.set(aceItemId, aceItem?.category ?? null);
-        }
-        const category = aceCategoryCache.get(aceItemId) ?? null;
+        const aceItem = await getACEItem(aceItemId);
+        const category = aceItem?.category ?? null;
         if (!category) {
           unallocatedOrderedTotal += amount;
           continue;
         }
         categories.add(category);
         orderedByCategory.set(category, (orderedByCategory.get(category) ?? 0) + amount);
+        perPoCategory.set(category, (perPoCategory.get(category) ?? 0) + amount);
+        perPoTraceable += amount;
+      }
+
+      poCategoryBreakdown.set(po.id, perPoCategory);
+      poTraceableTotal.set(po.id, perPoTraceable);
+    }
+
+    // Completed till date (B): Σ vendor Invoice amount, apportioned across
+    // categories by the share of the source PO's own traceable ordered
+    // value each category represents — a genuine link into Part 16
+    // (Payments & Receipts), closing the gap docs/OPEN_QUESTIONS.md #39(b)
+    // flagged ("Invoice carries no category field"), and matching the
+    // owner's own "vendor invoices" wording for this figure. An invoice
+    // whose PO has no traceable category at all can't be attributed
+    // anywhere; its amount goes to unallocatedCompletedTotal instead,
+    // mirroring unallocatedOrderedTotal.
+    const completedToDateByCategory = new Map<ContractCategory, number>();
+    let unallocatedCompletedTotal = 0;
+    const invoices = await invoiceAdapter.list({ projectId, pageSize: 200 });
+
+    for (const invoice of invoices.items) {
+      const breakdown = poCategoryBreakdown.get(invoice.purchaseOrderId);
+      const traceableTotal = poTraceableTotal.get(invoice.purchaseOrderId) ?? 0;
+      if (!breakdown || traceableTotal <= 0) {
+        unallocatedCompletedTotal += invoice.invoiceAmount;
+        continue;
+      }
+      for (const [category, categoryAmount] of breakdown) {
+        categories.add(category);
+        const share = invoice.invoiceAmount * (categoryAmount / traceableTotal);
+        completedToDateByCategory.set(category, (completedToDateByCategory.get(category) ?? 0) + share);
+      }
+    }
+
+    // Transparency-only second pass: the same apportionment, but for
+    // traced vendor Payments (cash actually disbursed) rather than
+    // Invoices (cash recognized/billed) — lets the breakdown sheet show
+    // "invoiced" next to "actually paid" when an invoice is only
+    // partially settled. Never folded into completedToDate itself. Only
+    // direction: "payment" rows count (vendor spend) — a "receipt"
+    // (customer money in) has nothing to do with (B).
+    const paidToDateByCategory = new Map<ContractCategory, number>();
+    let unallocatedPaidTotal = 0;
+    const payments = await paymentAdapter.list({ projectId, direction: "payment", pageSize: 200 });
+    const invoiceCache = new Map<string, Awaited<ReturnType<typeof invoiceAdapter.get>>>();
+    async function getInvoice(invoiceId: string) {
+      if (!invoiceCache.has(invoiceId)) {
+        invoiceCache.set(invoiceId, await invoiceAdapter.get(invoiceId));
+      }
+      return invoiceCache.get(invoiceId) ?? null;
+    }
+
+    for (const payment of payments.items) {
+      if (!payment.invoiceId) continue; // defensive — every "payment"-direction row has one, per CreatePaymentInput
+      const invoice = await getInvoice(payment.invoiceId);
+      if (!invoice) continue;
+      const breakdown = poCategoryBreakdown.get(invoice.purchaseOrderId);
+      const traceableTotal = poTraceableTotal.get(invoice.purchaseOrderId) ?? 0;
+      if (!breakdown || traceableTotal <= 0) {
+        unallocatedPaidTotal += payment.amount;
+        continue;
+      }
+      for (const [category, categoryAmount] of breakdown) {
+        categories.add(category);
+        const share = payment.amount * (categoryAmount / traceableTotal);
+        paidToDateByCategory.set(category, (paidToDateByCategory.get(category) ?? 0) + share);
       }
     }
 
     const rows: CostToCompleteRow[] = [...categories].map((category) => {
-      const originalEstimate = costByCategory.get(category)?.budgetAmount ?? 0;
-      const completedToDate = costByCategory.get(category)?.actualAmount ?? 0;
+      const aceOriginalEstimate = originalEstimateByCategory.get(category);
+      const originalEstimate = aceOriginalEstimate ?? costByCategory.get(category)?.budgetAmount ?? 0;
+      const originalEstimateSource: CostToCompleteRow["originalEstimateSource"] =
+        aceOriginalEstimate !== undefined ? "accepted_cost_estimate" : "cost_entry_budget";
+      const invoiceTracedCompleted = completedToDateByCategory.get(category);
+      const completedToDate = invoiceTracedCompleted ?? costByCategory.get(category)?.actualAmount ?? 0;
+      const completedToDateSource: CostToCompleteRow["completedToDateSource"] =
+        invoiceTracedCompleted !== undefined ? "invoices" : "cost_entry_actual";
+      const completedToDatePaid = paidToDateByCategory.get(category) ?? 0;
       const orderedTotal = orderedByCategory.get(category) ?? 0;
 
       const orderedNotCompleted = Math.max(0, orderedTotal - completedToDate);
@@ -154,7 +291,10 @@ class MockCostToCompleteAdapter implements CostToCompleteAdapter {
         projectId,
         category,
         originalEstimate,
+        originalEstimateSource,
         completedToDate,
+        completedToDateSource,
+        completedToDatePaid,
         orderedTotal,
         orderedNotCompleted,
         balanceToBeOrdered,
@@ -170,10 +310,11 @@ class MockCostToCompleteAdapter implements CostToCompleteAdapter {
       (acc, row) => ({
         totalOriginalEstimate: acc.totalOriginalEstimate + row.originalEstimate,
         totalCompletedToDate: acc.totalCompletedToDate + row.completedToDate,
+        totalPaidToDate: acc.totalPaidToDate + row.completedToDatePaid,
         totalBalanceToComplete: acc.totalBalanceToComplete + row.balanceToComplete,
         totalEstimatedValue: acc.totalEstimatedValue + row.totalEstimatedValue,
       }),
-      { totalOriginalEstimate: 0, totalCompletedToDate: 0, totalBalanceToComplete: 0, totalEstimatedValue: 0 },
+      { totalOriginalEstimate: 0, totalCompletedToDate: 0, totalPaidToDate: 0, totalBalanceToComplete: 0, totalEstimatedValue: 0 },
     );
 
     return {
@@ -182,6 +323,8 @@ class MockCostToCompleteAdapter implements CostToCompleteAdapter {
       ...totals,
       totalVariance: totals.totalOriginalEstimate - totals.totalEstimatedValue,
       unallocatedOrderedTotal,
+      unallocatedCompletedTotal,
+      unallocatedPaidTotal,
     };
   }
 }

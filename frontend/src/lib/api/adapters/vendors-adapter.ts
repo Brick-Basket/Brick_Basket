@@ -1,11 +1,13 @@
 import type {
   CreateVendorAssessmentInput,
+  CreateVendorDocumentInput,
   CreateVendorInput,
   CreateVendorPastWorkInput,
   UpdateVendorInput,
   Vendor,
   VendorAssessment,
   VendorCodeSeriesCategory,
+  VendorDocument,
   VendorGSTCategory,
   VendorNature,
   VendorPastWorkEntry,
@@ -15,6 +17,7 @@ import { computeAverageRating } from "@/components/vendors/vendor-rating";
 import { mockVendors } from "@/data/mock/vendors";
 import { mockVendorAssessments } from "@/data/mock/vendor-assessments";
 import { mockVendorPastWork } from "@/data/mock/vendor-past-work";
+import { mockVendorDocuments } from "@/data/mock/vendor-documents";
 
 /**
  * Adapter boundary for the Vendor module. Components/hooks depend on this
@@ -32,6 +35,8 @@ import { mockVendorPastWork } from "@/data/mock/vendor-past-work";
  *   POST   /api/vendors/:id/assessments        — add an assessment (admin)
  *   GET    /api/vendors/:id/past-work          — past work history
  *   POST   /api/vendors/:id/past-work          — add a past work entry (admin)
+ *   GET    /api/vendors/:id/documents          — attached document history (Document 2 correction)
+ *   POST   /api/vendors/:id/documents          — attach a document (admin, multipart upload)
  */
 export interface VendorActor {
   id: string;
@@ -76,12 +81,25 @@ export interface VendorsAdapter {
   addAssessment(vendorId: string, input: CreateVendorAssessmentInput, actor: VendorActor): Promise<VendorAssessment>;
   listPastWork(vendorId: string): Promise<VendorPastWorkEntry[]>;
   addPastWork(vendorId: string, input: CreateVendorPastWorkInput, actor: VendorActor): Promise<VendorPastWorkEntry>;
+  /** Document 2 correction — vendor document attachments, see `VendorDocument`'s header comment in `src/types/domain/vendor.ts`. */
+  listDocuments(vendorId: string): Promise<VendorDocument[]>;
+  addDocument(vendorId: string, input: CreateVendorDocumentInput, file: File | null, actor: VendorActor): Promise<VendorDocument>;
+  /**
+   * Mock-only convenience: a synchronous, in-memory object URL for a
+   * document attached during this session (via the browser File API), or
+   * `null` for every seeded demo record and after a page reload — there
+   * are no real file bytes behind those. Never part of the real backend
+   * contract, same convention as `SiteUpdatesAdapter.getPreviewUrl`.
+   */
+  getDocumentPreviewUrl(documentId: string): string | null;
 }
 
 class MockVendorsAdapter implements VendorsAdapter {
   private vendors: Vendor[] = [...mockVendors];
   private assessments: VendorAssessment[] = [...mockVendorAssessments];
   private pastWork: VendorPastWorkEntry[] = [...mockVendorPastWork];
+  private documents: VendorDocument[] = [...mockVendorDocuments];
+  private documentObjectUrls = new Map<string, string>();
 
   async list(params: VendorListParams = {}): Promise<VendorListResult> {
     await delay(300);
@@ -135,6 +153,7 @@ class MockVendorsAdapter implements VendorsAdapter {
       tradeName: input.tradeName,
       gstCategory: input.gstCategory,
       gstin: input.gstin,
+      panNumber: input.panNumber,
       address: input.address,
       msmeUdyamNumber: input.msmeUdyamNumber,
       contactPerson: input.contactPerson,
@@ -185,7 +204,7 @@ class MockVendorsAdapter implements VendorsAdapter {
 
   async listPastWork(vendorId: string): Promise<VendorPastWorkEntry[]> {
     await delay(250);
-    return this.pastWork.filter((p) => p.vendorId === vendorId).sort((a, b) => (a.completedAt < b.completedAt ? 1 : -1));
+    return this.pastWork.filter((p) => p.vendorId === vendorId).sort((a, b) => (a.completedAt ?? a.createdAt) < (b.completedAt ?? b.createdAt) ? 1 : -1);
   }
 
   async addPastWork(vendorId: string, input: CreateVendorPastWorkInput, _actor: VendorActor): Promise<VendorPastWorkEntry> {
@@ -197,11 +216,45 @@ class MockVendorsAdapter implements VendorsAdapter {
       projectId: input.projectId,
       description: input.description,
       value: input.value,
-      completedAt: input.completedAt,
+      status: input.status,
+      // "Under progress" work has no completion date yet — only a
+      // "completed" entry carries one, per the Document 2 correction.
+      completedAt: input.status === "completed" ? input.completedAt : undefined,
       createdAt: new Date().toISOString(),
     };
     this.pastWork = [entry, ...this.pastWork];
     return entry;
+  }
+
+  async listDocuments(vendorId: string): Promise<VendorDocument[]> {
+    await delay(250);
+    return this.documents.filter((d) => d.vendorId === vendorId).sort((a, b) => (a.uploadedAt < b.uploadedAt ? 1 : -1));
+  }
+
+  async addDocument(vendorId: string, input: CreateVendorDocumentInput, file: File | null, actor: VendorActor): Promise<VendorDocument> {
+    await delay(400);
+    this.mustFind(vendorId);
+    const document: VendorDocument = {
+      id: `vdoc_${Math.random().toString(36).slice(2, 10)}`,
+      vendorId,
+      documentType: input.documentType,
+      label: input.label,
+      fileName: input.fileName,
+      fileType: input.fileType,
+      fileSizeBytes: input.fileSizeBytes,
+      uploadedBy: actor.id,
+      uploadedByName: actor.name,
+      uploadedAt: new Date().toISOString(),
+    };
+    if (file) {
+      this.documentObjectUrls.set(document.id, URL.createObjectURL(file));
+    }
+    this.documents = [document, ...this.documents];
+    return document;
+  }
+
+  getDocumentPreviewUrl(documentId: string): string | null {
+    return this.documentObjectUrls.get(documentId) ?? null;
   }
 
   private mustFind(id: string): Vendor {

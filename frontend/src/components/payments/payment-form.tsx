@@ -17,7 +17,7 @@ import { PAYMENT_DIRECTION_CONFIG, PAYMENT_MODE_CONFIG, PAYMENT_MODE_ORDER } fro
 import { useProjects } from "@/hooks/use-projects";
 import { useVendors } from "@/hooks/use-vendors";
 import { formatINR } from "@/lib/utils/format";
-import type { Payment } from "@/types/domain/payment";
+import type { Payment, PaymentDirection } from "@/types/domain/payment";
 
 const paymentFormSchema = z
   .object({
@@ -43,20 +43,30 @@ const paymentFormSchema = z
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 
 /**
- * Create/edit form for the Payments & Receipts tab, embedded in a
+ * Create/edit form for the Payments & Receipts route, embedded in a
  * Dialog. `direction` and its linked reference (`invoiceId`/`contractId`)
  * plus `projectId` are only editable in `"create"` mode — together they
  * identify what this record is a payment/receipt *against*, matching
  * `CostEntry`'s identity-fields-immutable convention (Part 15).
+ *
+ * BrickBasket "Invoices & Payments together, Receipts separate"
+ * correction: `lockDirectionTo` fixes `direction` for a fresh entry and
+ * hides the now-redundant Direction field, for the two direction-specific
+ * entry points this form is opened from — "Add Payment" on the Invoices &
+ * Payments tab, and "Add Receipt" on the Receipts tab. It's ignored once
+ * `mode === "edit"`, where the existing record's own direction is always
+ * shown, locked, exactly as before this correction.
  */
 export function PaymentForm({
   mode: formMode,
   payment,
+  lockDirectionTo,
   onCancel,
   onSuccess,
 }: {
   mode: "create" | "edit";
   payment?: Payment;
+  lockDirectionTo?: PaymentDirection;
   onCancel: () => void;
   onSuccess: (payment: Payment) => void;
 }) {
@@ -77,7 +87,7 @@ export function PaymentForm({
   } = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      direction: payment?.direction ?? "payment",
+      direction: payment?.direction ?? lockDirectionTo ?? "payment",
       projectId: payment?.projectId ?? "",
       invoiceId: payment?.invoiceId ?? "",
       contractId: payment?.contractId ?? "",
@@ -126,16 +136,27 @@ export function PaymentForm({
   const submitting = isSubmitting || createStatus === "loading" || updateStatus === "loading";
   const submitError = formMode === "create" ? createError : updateError;
   const locked = formMode === "edit";
+  // Only relevant in "create" mode — "edit" always shows the existing
+  // record's own Direction field above, locked, regardless of
+  // `lockDirectionTo`.
+  const hideDirectionField = formMode === "create" && !!lockDirectionTo;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <FormField label="Direction" htmlFor="payment-direction" required hint={locked ? "Can't be changed after creation." : undefined}>
-          <Select id="payment-direction" disabled={locked} {...register("direction")}>
-            <option value="payment">{PAYMENT_DIRECTION_CONFIG.payment.label}</option>
-            <option value="receipt">{PAYMENT_DIRECTION_CONFIG.receipt.label}</option>
-          </Select>
-        </FormField>
+      <div className={hideDirectionField ? "grid gap-4" : "grid gap-4 sm:grid-cols-2"}>
+        {/* `hideDirectionField`: kept registered (just visually hidden, not
+            unmounted) so its fixed `lockDirectionTo` value keeps flowing
+            through react-hook-form exactly like any other field — avoids
+            relying on react-hook-form's handling of a field present only
+            in `defaultValues` and never registered. */}
+        <div className={hideDirectionField ? "hidden" : undefined}>
+          <FormField label="Direction" htmlFor="payment-direction" required hint={locked ? "Can't be changed after creation." : undefined}>
+            <Select id="payment-direction" disabled={locked || hideDirectionField} {...register("direction")}>
+              <option value="payment">{PAYMENT_DIRECTION_CONFIG.payment.label}</option>
+              <option value="receipt">{PAYMENT_DIRECTION_CONFIG.receipt.label}</option>
+            </Select>
+          </FormField>
+        </div>
         <FormField label="Project" htmlFor="payment-project" required error={errors.projectId?.message} hint={locked ? "Can't be changed after creation." : undefined}>
           <Select id="payment-project" disabled={locked} invalid={!!errors.projectId} {...register("projectId")}>
             <option value="">Select a project…</option>
@@ -216,7 +237,13 @@ export function PaymentForm({
         </Button>
         <Button type="submit" disabled={submitting}>
           {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          {formMode === "create" ? "Add Entry" : "Save Changes"}
+          {formMode === "create"
+            ? lockDirectionTo === "receipt"
+              ? "Add Receipt"
+              : lockDirectionTo === "payment"
+                ? "Add Payment"
+                : "Add Entry"
+            : "Save Changes"}
         </Button>
       </div>
     </form>

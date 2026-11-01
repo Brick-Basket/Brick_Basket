@@ -93,17 +93,20 @@ export function GSTRTable({
       key: "taxableValue",
       header: "Taxable Value",
       sortKey: "taxableValue",
+      align: "right",
       render: (r) => formatINR(r.taxableValue),
     },
     {
       key: "taxAmount",
       header: "Tax",
       hideOnMobile: true,
+      align: "right",
       render: (r) => formatINR(r.taxAmount),
     },
     {
       key: "total",
       header: "Total",
+      align: "right",
       render: (r) => formatINR(getTotalValue(r)),
     },
   ];

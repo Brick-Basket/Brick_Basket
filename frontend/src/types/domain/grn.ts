@@ -1,3 +1,5 @@
+import type { StockMaterial } from "@/types/domain/stock-entry";
+
 /**
  * Goods Receipt Note (GRN) — Store Management, Part 11.
  *
@@ -15,10 +17,22 @@
  * `status === "issued"` (enforced by `GRNAdapter.create`) — goods are
  * received only after a PO has actually been sent to the vendor. More
  * than one GRN may be recorded against the same PO (a real delivery is
- * often split across more than one truck/date) — this build does not
- * enforce that the sum of `receivedQuantity` across a line's GRNs never
- * exceeds `orderedQuantity`; that validation is left to the backend once
- * the client's real over-receipt policy is confirmed.
+ * often split across more than one truck/date) — **this build does
+ * enforce** that the sum of `receivedQuantity` across a line's GRNs never
+ * exceeds that line's `orderedQuantity` (`GRNAdapter.create`'s private
+ * `assertWithinOrdered`, docs/OPEN_QUESTIONS.md #32b — this comment was
+ * stale from before that guard was added; the guard itself is real and
+ * already shipped, not left to the backend).
+ *
+ * **Spec-review correction (docs/OPEN_QUESTIONS.md #32d)** — `GRNLineItem`
+ * now carries an optional `stockMaterial` tag (see below) so a received
+ * line can be traced into the Stock Statement module's reconciliation
+ * view (`StockTrace`, `src/types/domain/stock-entry.ts`), closing the gap
+ * this module's own header comment used to flag ("doesn't map onto
+ * `StockEntry`'s closed `StockMaterial` reference list without a
+ * confirmed rule"). The tag is opt-in and purely advisory — it never
+ * auto-writes into `StockEntry` itself; see `StockTrace`'s own header
+ * comment for why.
  */
 export interface GRN {
   id: string;
@@ -64,6 +78,14 @@ export interface GRNLineItem {
    * through the Documents module (Part 6) once that wiring is confirmed.
    */
   warrantyCertificateNumber?: string;
+  /**
+   * Optional tag against the Stock Statement's closed material list
+   * (Part 11) — lets this received line feed `StockAdapter.getTrace`'s
+   * reconciliation view. Left unset when the delivered item doesn't map
+   * cleanly onto `StockMaterial`'s shorter reference list; see
+   * docs/OPEN_QUESTIONS.md #32.
+   */
+  stockMaterial?: StockMaterial;
 }
 
 export interface CreateGRNLineInput {
@@ -71,6 +93,7 @@ export interface CreateGRNLineInput {
   receivedQuantity: number;
   brand?: string;
   warrantyCertificateNumber?: string;
+  stockMaterial?: StockMaterial;
 }
 
 export interface CreateGRNInput {

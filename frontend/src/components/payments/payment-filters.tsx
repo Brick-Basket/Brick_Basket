@@ -8,8 +8,26 @@ import { useProjects } from "@/hooks/use-projects";
 import type { PaymentListParams } from "@/lib/api/adapters/payments-adapter";
 import type { PaymentDirection } from "@/types/domain/payment";
 
-/** Search + direction + project filter for the Payments & Receipts tab. */
-export function PaymentFilters({ value, onChange }: { value: PaymentListParams; onChange: (next: PaymentListParams) => void }) {
+/**
+ * Search + direction + project filter for the Payments & Receipts route.
+ *
+ * BrickBasket "Invoices & Payments together, Receipts separate"
+ * correction: this filter bar is now used in two direction-specific
+ * contexts — the Invoices & Payments tab's payment ledger section, and
+ * the standalone Receipts tab — each of which fixes `value.direction`
+ * itself rather than letting the user pick it. Pass `fixedDirection` in
+ * those cases to hide the now-redundant direction dropdown; omit it to
+ * get the original "payments & receipts together" picker back.
+ */
+export function PaymentFilters({
+  value,
+  onChange,
+  fixedDirection,
+}: {
+  value: PaymentListParams;
+  onChange: (next: PaymentListParams) => void;
+  fixedDirection?: PaymentDirection;
+}) {
   const { projects: allProjects } = useProjects();
   return (
     <FilterBar>
@@ -20,16 +38,18 @@ export function PaymentFilters({ value, onChange }: { value: PaymentListParams; 
         className="w-full sm:w-64"
         aria-label="Search payments"
       />
-      <Select
-        value={value.direction ?? ""}
-        onChange={(e) => onChange({ ...value, direction: (e.target.value as PaymentDirection) || undefined, page: 1 })}
-        className="w-full sm:w-56"
-        aria-label="Filter by direction"
-      >
-        <option value="">Payments & receipts</option>
-        <option value="payment">{PAYMENT_DIRECTION_CONFIG.payment.label}</option>
-        <option value="receipt">{PAYMENT_DIRECTION_CONFIG.receipt.label}</option>
-      </Select>
+      {!fixedDirection && (
+        <Select
+          value={value.direction ?? ""}
+          onChange={(e) => onChange({ ...value, direction: (e.target.value as PaymentDirection) || undefined, page: 1 })}
+          className="w-full sm:w-56"
+          aria-label="Filter by direction"
+        >
+          <option value="">Payments & receipts</option>
+          <option value="payment">{PAYMENT_DIRECTION_CONFIG.payment.label}</option>
+          <option value="receipt">{PAYMENT_DIRECTION_CONFIG.receipt.label}</option>
+        </Select>
+      )}
       <Select
         value={value.projectId ?? ""}
         onChange={(e) => onChange({ ...value, projectId: e.target.value || undefined, page: 1 })}

@@ -11,6 +11,8 @@ Two mechanisms exist side by side:
 1. **Zod schema + `zodResolver`** (`react-hook-form`) — 22 of the app's 23 create/edit forms. Most inline the schema directly in the `*-form.tsx` file; three modules (Contract, Requisition, MRC, DPR) keep the schema in a sibling `*-form-schema.ts` file instead, specifically so the form and its dynamic line-item editor (`ContractLineItemsEditor`, `MaterialRequirementEditor`, `MRCLineItemsEditor`, DPR's manpower/work-item editors) agree on field paths without importing each other.
 2. **Manual state + hand-written checks** — `GRNCreateForm` alone. It has no `react-hook-form`/zod at all: line items live in a plain `useState<LineDraft[]>`, and `handleSubmit` runs a short sequence of `if` checks before calling the adapter, surfacing the first failure in a single `formError` string. This is the one form in the app that doesn't follow the zod convention — flagged here rather than silently treated as equivalent.
 
+`LoginForm` and `RegisterForm` (`src/components/auth/`) aren't counted in the "23 create/edit forms" above — they're auth, not a domain record — but as of the broad audit pass they follow the same zod + `zodResolver` + `FormField error` convention as everything else. Previously both used plain `useState` with `required`/`minLength` on bare `<input>`s while also setting `noValidate`, so neither the browser's native validation nor a custom error ever actually surfaced a blank/invalid field — a real inconsistency, now fixed the same way as every other form here. `RegisterForm`'s password-confirmation check is a `.superRefine()` targeting `confirmPassword`, the same pattern used elsewhere in this doc for cross-field checks.
+
 Every form also sets `noValidate` on its `<form>` (or, for `GRNCreateForm`, uses `type="button"` on its own submit action) so the browser's native HTML5 validation UI never fights with the zod/React error messages — a validation failure always renders through `FormField`'s `error` prop, never a native browser tooltip.
 
 Cross-field rules that a plain per-field zod schema can't express use `.refine()` (single derived check) or `.superRefine()` (multiple conditional issues, each attached to a specific field path) — both listed per-module below. Two rules are enforced **inside the adapter's `create` method** instead of the form schema, because they depend on data the form's own fields don't carry (a linked record's own status) — also called out below.
@@ -29,7 +31,7 @@ Cross-field rules that a plain per-field zod schema can't express use `.refine()
 | `message` | required, min 5 chars |
 | `assignedTo` | required (a `Role`, defaulted by the caller) |
 
-The public `/contact` form (`contactSchema`) is the same shape minus `source`/`assignedTo`, with a stricter `message` minimum (10 chars, "add a few more details").
+The public `/contact` form (`contactSchema`) is the same shape minus `source`/`assignedTo`, **except `message` is fully optional with no minimum** (a deliberate frontend decision in `contact-form.tsx`'s own header comment — a blank textarea submits as `""`, and nothing downstream requires a non-empty value). This doc previously claimed a stricter 10-char minimum here; that line was stale and has been corrected to match the actual schema rather than the other way around, since the looser rule was an intentional choice, not a regression.
 
 ### Contract Management (`contract-form.tsx` + `contract-form-schema.ts`, Part 5)
 
@@ -110,7 +112,7 @@ Enforced by hand in `handleSubmit`, in this order, each returning early with a s
 2. A "Date Received" must be selected (`receivedAt`).
 3. Every line's `receivedQuantity` must parse to a number and be ≥ 0 (`Number.isNaN` check + non-negative check, across every line in one pass — the first invalid line fails the whole submission, not reported per-row).
 
-There is **no upper bound** tying a line's `receivedQuantity` to what the PO actually ordered (`orderedQuantity` is shown for reference only) — see `docs/OPEN_QUESTIONS.md` #32(b), the same non-enforcement already logged there. `brand` and `warrantyCertificateNumber` are optional on every line. The Submit button is additionally `disabled` whenever no PO is selected, as a first line of defense before `handleSubmit` even runs.
+There is **no upper bound** tying a line's `receivedQuantity` to what the PO actually ordered (`orderedQuantity` is shown for reference only) — see `docs/OPEN_QUESTIONS.md` #32(b), the same non-enforcement already logged there. `brand` and `warrantyCertificateNumber` are optional on every line. The Submit button is `disabled` whenever no PO is selected **or the selected PO isn't `issued`**, as a first line of defense before `handleSubmit` even runs; a non-issued PO also now shows an `ErrorState` in place of the line-item form itself (broad audit pass — previously the full form rendered regardless, and a non-issued PO was only ever caught by the adapter's own guard at submit time, matching `POCreateForm`'s pre-check pattern for its own source record).
 
 ### Store Management — Stock Statement (`stock-form.tsx`, Part 11)
 
@@ -118,7 +120,7 @@ There is **no upper bound** tying a line's `receivedQuantity` to what the PO act
 |---|---|
 | `projectId` | required |
 | `material` | required, one of the 11-value `StockMaterial` list |
-| `otherMaterialName` | optional at the schema level — **not enforced as required when `material === "other"`**, a real gap (contrast with GSTR/Payment/Vendor below, which do enforce their conditional-required fields via `.superRefine()`/`.refine()`); the value is only actually sent to the adapter when `material === "other"` (see `onSubmit`), so a blank name can currently reach the record |
+| `otherMaterialName` | **required when `material === "other"`**, enforced via `.superRefine()` (same shape as GSTR/Payment/Vendor's conditional-required fields below). Previously enforced only at the schema level with no visible feedback — a blank submit was silently blocked with no red text or border; the broad audit pass wired `error`/`invalid` through to the `FormField`/`Input` so the failure is now actually visible. |
 | `uom` | required, min 1 char |
 | `date` | required |
 | `openingStock` / `receivedToday` / `consumedToday` | each required, ≥ 0 |
@@ -127,7 +129,7 @@ There is **no upper bound** tying a line's `receivedQuantity` to what the PO act
 
 ### Store Management — Wastage (`wastage-form.tsx`, Part 11)
 
-Same `material`/`otherMaterialName` shape and the same unenforced "other" gap as Stock above. Additionally: `quantity` required, > 0; `value` required, ≥ 0; `recordedAt` required; `reason` optional.
+Same `material`/`otherMaterialName` shape as Stock above — required when `material === "other"`, enforced via `.superRefine()`, and (as of the broad audit pass) actually visible via `FormField`'s `error` prop. Additionally: `quantity` required, > 0; `value` required, ≥ 0; `recordedAt` required; `reason` optional.
 
 ### MRC — Material Receipt Certificate (`mrc-form.tsx` + `mrc-form-schema.ts`, Part 12)
 
@@ -229,5 +231,5 @@ No forms — all three are read-only computed views. Nothing to validate.
 
 - **`.superRefine()` for a discriminator-driven required field** (MRC lines, DPR work-item rows, Payment, GSTR): every one of these picks a `source`/`direction`/`type` value that changes which *other* fields on the same row become required. All four follow the identical shape — plain-optional at the object level, enforced conditionally in `.superRefine()`, each `ctx.addIssue()` pinned to the specific field path so `FormField`'s error message lands on the right input.
 - **`.refine()` for a two-field ordering/presence check** (Vendor's GSTIN-when-registered, Schedule's end-after-start): a single derived boolean, one message, one path — used instead of `.superRefine()` when there's only one condition to express.
-- **Two known-inconsistent gaps**, both logged in `docs/OPEN_QUESTIONS.md` #41 rather than fixed here, since fixing either means guessing at unconfirmed backend behavior: Stock/Wastage's `otherMaterialName` isn't actually required when `material === "other"` (unlike every other conditional-field pattern in this table, which *does* enforce it); Requisition's `predefined`-source line doesn't require `aceItemId` the way MRC's `grn`-source line requires `grnLineItemId`, even though both describe the same "picked from a list vs. typed by hand" shape.
+- **One remaining known-inconsistent gap**, logged in `docs/OPEN_QUESTIONS.md` #41 rather than fixed here, since fixing it means guessing at unconfirmed backend behavior: Requisition's `predefined`-source line doesn't require `aceItemId` the way MRC's `grn`-source line requires `grnLineItemId`, even though both describe the same "picked from a list vs. typed by hand" shape. (Stock/Wastage's `otherMaterialName` — previously listed here alongside it — is now fully enforced *and* visibly wired; see those modules' rows above.)
 - **Adapter-level (not form-level) validation** exists in exactly one module (GSTR) — everywhere else, "does this reference a real, appropriately-statused record" is left unchecked client-side. A backend re-implementing these rules should decide, module by module, whether that adapter-level check is the right precedent to extend (e.g. should creating an Invoice validate its `purchaseOrderId` is actually `issued`?) rather than assuming GSTR's stricter behavior is the intended norm everywhere.

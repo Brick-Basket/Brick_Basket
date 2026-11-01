@@ -24,13 +24,28 @@ export function CostToCompleteBreakdownSheet({ row, onClose }: { row: CostToComp
           <div className="flex flex-col gap-1 rounded-card border border-border p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Original Estimate (A)</p>
             <p className="font-heading text-lg font-semibold text-ink">{formatINR(row.originalEstimate)}</p>
-            <p className="text-xs text-ink-muted">This project&apos;s Project Cost Accounting budget for this category (Part 15).</p>
+            <p className="text-xs text-ink-muted">
+              {row.originalEstimateSource === "accepted_cost_estimate"
+                ? "Derived from this project's Accepted Cost Estimate: Σ(ACE item rate × requisitioned quantity) across every non-rejected requisition line raised against this category (Part 8)."
+                : "No requisition has yet been raised against this category's Accepted Cost Estimate items, so this falls back to the project's Project Cost Accounting budget for this category (Part 15)."}
+            </p>
           </div>
 
           <div className="flex flex-col gap-1 rounded-card border border-border p-3">
             <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Completed till date (B)</p>
             <p className="font-heading text-lg font-semibold text-ink">{formatINR(row.completedToDate)}</p>
-            <p className="text-xs text-ink-muted">This project&apos;s Project Cost Accounting actual spend for this category (Part 15).</p>
+            <p className="text-xs text-ink-muted">
+              {row.completedToDateSource === "invoices"
+                ? "Derived from vendor Invoices (Part 16): every invoice against this category's Purchase Orders, apportioned by each PO's own category mix — the owner's own \"vendor invoices\" source for this figure."
+                : "No vendor Invoice has yet been traced to this category, so this falls back to the project's Project Cost Accounting actual spend for this category (Part 15)."}
+            </p>
+            {row.completedToDatePaid !== row.completedToDate && (
+              <p className="mt-1 rounded-md bg-surface-muted px-2 py-1.5 text-xs text-ink-muted">
+                Of this, <span className="font-medium text-ink">{formatINR(row.completedToDatePaid)}</span> has actually been
+                paid to vendors so far (Part 16 Payments, cash basis) — the rest is invoiced but not yet settled. Shown for
+                transparency only; (B) above and every figure that depends on it use the invoiced amount.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 rounded-card border border-border p-3">

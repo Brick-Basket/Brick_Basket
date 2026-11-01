@@ -23,6 +23,14 @@
  * `src/lib/api/adapters/notifications-adapter.ts` for the full
  * permission → condition → message rule table, and `docs/OPEN_QUESTIONS.md`
  * #40 for every decision this required.
+ *
+ * `"site_update" | "payment" | "project_progress"` added in the Customer
+ * Module follow-up (docs/OPEN_QUESTIONS.md #81) after a direct question
+ * surfaced that these three were the one gap in this otherwise-complete
+ * rule table — Contracts/MRC generated an alert, but a new Site Update,
+ * Payment, or Progress change never did. See
+ * `NotificationsAdapter`'s header comment for why those three rules are
+ * shaped differently from every rule above them (events, not states).
  */
 export type NotificationCategory =
   | "lead"
@@ -32,7 +40,10 @@ export type NotificationCategory =
   | "tax"
   | "schedule"
   | "contract"
-  | "mrc";
+  | "mrc"
+  | "site_update"
+  | "payment"
+  | "project_progress";
 
 export type NotificationSeverity = "info" | "warning" | "urgent";
 

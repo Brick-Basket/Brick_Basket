@@ -22,7 +22,7 @@ All routes exist as real files from Part 1 onward (placeholder page + correct la
 | Route | Purpose | Part |
 |---|---|---|
 | `/dashboard` | Portal home / summary | 3 |
-| `/dashboard/projects` | Customer's project(s) | 3 |
+| `/dashboard/projects` | Customer's project(s) — now includes a read-only progress-percentage summary per project (Customer Module pass, see `docs/OPEN_QUESTIONS.md` #81) | 3 |
 | `/dashboard/contracts` | My Contracts — list | 5 |
 | `/dashboard/contracts/[id]` | Contract detail — review/accept/decline | 5 |
 | `/dashboard/documents` | Drawings, certificates, warranty docs | 6 |
@@ -46,6 +46,10 @@ All routes exist as real files from Part 1 onward (placeholder page + correct la
 | `/admin/documents` | Contract Directory — search/filter contracts by city/package type, see document counts (owner corrections pass) | 6 |
 | `/admin/documents/[contractId]` | Documents for one contract — upload/list/Warranty Mapping, now the only place uploading happens (owner corrections pass) | 6 |
 | `/admin/vendors` | Vendor Management | 7 |
+| `/admin/customers` | Customer Module (CRM) — list, client-side filter/search by lead-vs-direct source | Customer Module, post-Part-20 |
+| `/admin/customers/new` | Create a customer directly, without first converting a Lead | Customer Module, post-Part-20 |
+| `/admin/customers/[id]` | Customer detail — profile, per-linked-project progress (%) editor, Payments, Progress Photographs | Customer Module, post-Part-20 |
+| `/admin/customers/[id]/edit` | Edit customer profile | Customer Module, post-Part-20 |
 | `/admin/supply-chain/ace` | Accepted Cost Estimate — list + create/edit dialog (permission-gated) | 8 |
 | `/admin/supply-chain/requisitions` | Purchase/Material Requisition — list | 8 |
 | `/admin/supply-chain/requisitions/new` | Create requisition | 8 |

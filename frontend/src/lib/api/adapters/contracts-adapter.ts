@@ -24,6 +24,14 @@ export interface ContractListParams {
   search?: string;
   status?: ContractStatus;
   customerId?: string;
+  /**
+   * BrickBasket "everything interconnected" connectivity pass: Contracts
+   * carries an optional `projectId` (set once a contract is linked to a
+   * project) but had no way to filter by it — every other project-scoped
+   * module (GRN, Documents, Finance, …) already does. Added so this list
+   * can follow the shared Global Project Selector like the rest of the app.
+   */
+  projectId?: string;
   sortBy?: "createdAt" | "updatedAt" | "status" | "title";
   sortDir?: "asc" | "desc";
   page?: number;
@@ -89,6 +97,7 @@ class MockContractsAdapter implements ContractsAdapter {
     let items = [...this.contracts];
 
     if (params.customerId) items = items.filter((c) => c.customerId === params.customerId);
+    if (params.projectId) items = items.filter((c) => c.projectId === params.projectId);
     if (params.status) items = items.filter((c) => c.status === params.status);
     if (params.search) {
       const q = params.search.trim().toLowerCase();

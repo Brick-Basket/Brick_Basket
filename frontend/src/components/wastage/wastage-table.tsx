@@ -47,12 +47,14 @@ export function WastageTable({
       key: "quantity",
       header: "Quantity",
       sortKey: "quantity",
+      align: "right",
       render: (e) => `${e.quantity.toLocaleString("en-IN")} ${e.uom}`,
     },
     {
       key: "value",
       header: "Value",
       sortKey: "value",
+      align: "right",
       render: (e) => formatINR(e.value),
     },
   ];

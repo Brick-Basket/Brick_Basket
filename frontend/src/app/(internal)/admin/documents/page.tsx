@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ErrorState } from "@/components/domain/error-state";
 import { EmptyState } from "@/components/domain/empty-state";
@@ -9,6 +9,7 @@ import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useContracts } from "@/hooks/use-contracts";
 import { useCustomers } from "@/hooks/use-customers";
 import { useDocuments } from "@/hooks/use-documents";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { ContractDirectoryFilters, type ContractDirectoryFilterValues } from "@/components/documents/contract-directory-filters";
 import { ContractDirectoryTable } from "@/components/documents/contract-directory-table";
 import { ADMIN_ROUTES } from "@/lib/constants/routes";
@@ -43,7 +44,30 @@ export default function AdminDocumentsPage() {
 
 function AdminDocumentsDirectoryContent() {
   const router = useRouter();
-  const [filters, setFilters] = useState<ContractDirectoryFilterValues>({ search: "", city: "", contractCategory: "" });
+  const [filters, setFilters] = useState<ContractDirectoryFilterValues>({ search: "", city: "", contractCategory: "", projectId: "" });
+
+  // BrickBasket "Global Project Selector" connectivity fix: this directory
+  // now follows the shared `ProjectProvider` selection on every change —
+  // not just once on load — the same pattern `GRNFilters`/`DPRFilters`
+  // already use, so switching the project in the admin topbar while
+  // already on this page actually filters the directory to it. Following
+  // stops the moment the user picks a project (or "All projects") directly
+  // in this page's own filter: from then on it's independently the user's
+  // own choice for the rest of this visit. A fresh visit (this component
+  // remounts on navigation) always re-seeds from whatever is currently
+  // shared.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: ContractDirectoryFilterValues) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
 
   const { status: contractsStatus, error: contractsError, result: contractsResult, refetch } = useContracts({
     search: filters.search || undefined,
@@ -74,6 +98,7 @@ function AdminDocumentsDirectoryContent() {
   }, [contractsResult]);
 
   const filteredContracts = (contractsResult?.items ?? []).filter((c) => {
+    if (filters.projectId && c.projectId !== filters.projectId) return false;
     if (filters.city && c.city !== filters.city) return false;
     if (filters.contractCategory && c.contractCategory !== filters.contractCategory) return false;
     return true;
@@ -89,7 +114,7 @@ function AdminDocumentsDirectoryContent() {
         </p>
       </div>
 
-      <ContractDirectoryFilters value={filters} cities={cities} onChange={setFilters} />
+      <ContractDirectoryFilters value={filters} cities={cities} onChange={handleFiltersChange} />
 
       {contractsStatus === "loading" && (
         <div className="flex flex-col gap-3">

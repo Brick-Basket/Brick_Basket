@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Select } from "@/components/ui/select";
 import { FilterBar } from "@/components/domain/filter-bar";
 import { EmptyState } from "@/components/domain/empty-state";
@@ -12,6 +12,7 @@ import { CostToCompleteSummary } from "@/components/cost/cost-to-complete-summar
 import { CostToCompleteTable } from "@/components/cost/cost-to-complete-table";
 import { CostToCompleteBreakdownSheet } from "@/components/cost/cost-to-complete-breakdown-sheet";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectContext } from "@/components/providers/project-provider";
 import type { CostToCompleteRow } from "@/types/domain/cost-to-complete";
 
 export default function AdminCostToCompletePage() {
@@ -44,6 +45,20 @@ function AdminCostToCompleteContent() {
   const [projectId, setProjectId] = useState<string | undefined>("proj_modern_residence");
   const [breakdownRow, setBreakdownRow] = useState<CostToCompleteRow | null>(null);
 
+  // BrickBasket "Global Project Selector" correction: Cost-to-Complete
+  // has no "All projects" view (see above), so — exactly like
+  // `AdminScheduleContent` — the shared `ProjectProvider` selection is
+  // this page's only project control once one exists: it mirrors the
+  // shared selection on every change, and switching the dropdown below
+  // writes straight back to it, instead of keeping a disconnected
+  // local-only default.
+  const { selected, setSelectedId } = useProjectContext();
+  useEffect(() => {
+    if (selected && selected.id !== projectId) {
+      setProjectId(selected.id);
+    }
+  }, [selected, projectId]);
+
   const { projects } = useProjects();
   const { status, error, result, refetch } = useCostToComplete(projectId);
 
@@ -61,7 +76,11 @@ function AdminCostToCompleteContent() {
       <FilterBar>
         <Select
           value={projectId ?? ""}
-          onChange={(e) => setProjectId(e.target.value)}
+          onChange={(e) => {
+            const nextId = e.target.value;
+            setProjectId(nextId);
+            if (nextId) setSelectedId(nextId);
+          }}
           className="w-full sm:w-56"
           aria-label="Select project"
         >

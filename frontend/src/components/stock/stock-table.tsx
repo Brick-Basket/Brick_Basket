@@ -40,12 +40,13 @@ export function StockTable({
       render: (e) => formatDate(e.date),
     },
     { key: "uom", header: "Unit", hideOnMobile: true, render: (e) => e.uom },
-    { key: "openingStock", header: "Opening", hideOnMobile: true, render: (e) => e.openingStock.toLocaleString("en-IN") },
-    { key: "receivedToday", header: "Received Today", render: (e) => e.receivedToday.toLocaleString("en-IN") },
-    { key: "consumedToday", header: "Consumed Today", render: (e) => e.consumedToday.toLocaleString("en-IN") },
+    { key: "openingStock", header: "Opening", hideOnMobile: true, align: "right", render: (e) => e.openingStock.toLocaleString("en-IN") },
+    { key: "receivedToday", header: "Received Today", align: "right", render: (e) => e.receivedToday.toLocaleString("en-IN") },
+    { key: "consumedToday", header: "Consumed Today", align: "right", render: (e) => e.consumedToday.toLocaleString("en-IN") },
     {
       key: "closingStock",
       header: "Closing",
+      align: "right",
       render: (e) => {
         const closing = e.openingStock + e.receivedToday - e.consumedToday;
         return <span className={closing <= 0 ? "font-medium text-warning" : "font-medium text-ink"}>{closing.toLocaleString("en-IN")}</span>;

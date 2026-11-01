@@ -58,10 +58,33 @@ export function Dialog({
         className="absolute inset-0 bg-black/40"
         onClick={onClose}
       />
+      {/*
+       * BUG FIX (owner report: "Add Stock Entry" — after clicking "Use these
+       * values" on the GRN/MR/Wastage reconciliation aid, the dialog grew
+       * taller than the viewport and there was no way to reach "Supplier",
+       * "Remarks", or the Cancel/Add Entry buttons at the bottom; the top of
+       * the dialog, including its own title, was invisibly clipped above the
+       * screen too). This panel previously had no height cap and no
+       * scroll of its own — just `p-6` with everything stacked inside an
+       * otherwise-unconstrained `<div>`. With the overlay centering it via
+       * `items-center` on a `fixed inset-0` container, any content taller
+       * than the viewport simply overflowed equally above *and* below the
+       * screen, and since `Dialog` also locks `document.body`'s scroll
+       * while open (a few lines up), there was no way to reach the clipped
+       * content at all — not a problem unique to Stock Statement, since
+       * every one of this component's 19 call sites (Stock, Wastage,
+       * Schedule, Finance, Leads, PO detail, etc.) could hit the same wall
+       * with a long enough form or a wide validation-error list. Capping
+       * the panel at `max-h-[85vh]` and making it scroll internally
+       * (`overflow-y-auto`) keeps the panel fully on-screen regardless of
+       * content height, with the title, body, and footer all scrolling
+       * together — the simplest fix that doesn't require every caller's
+       * form to opt in individually.
+       */}
       <div
         ref={panelRef}
         tabIndex={-1}
-        className="relative w-full max-w-md rounded-card bg-surface p-6 shadow-xl outline-none"
+        className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-y-auto rounded-card bg-surface p-6 shadow-xl outline-none"
       >
         <div className="flex items-start justify-between gap-3">
           <div>

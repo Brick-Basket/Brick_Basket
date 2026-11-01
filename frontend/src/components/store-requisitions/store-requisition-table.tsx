@@ -51,6 +51,7 @@ export function StoreRequisitionTable({
     {
       key: "quantity",
       header: "Requested Qty.",
+      align: "right",
       render: (r) => `${r.requestedQuantity} ${r.uom}`,
       hideOnMobile: true,
     },

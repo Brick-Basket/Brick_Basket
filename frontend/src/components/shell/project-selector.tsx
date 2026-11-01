@@ -40,12 +40,41 @@ export function ProjectSelector() {
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  useClickOutside(containerRef, () => setOpen(false));
+  const listRef = useRef<HTMLUListElement>(null);
+  // BUG FIX (two parts, same underlying complaint: "I can't reach above
+  // the selected one"). (1) This effect used to refire — and refocus the
+  // already-focused selected option — on any render where `projects`/
+  // `selected` got a new reference, not only when the list actually
+  // opened, because `ProjectContext`'s Provider value used to be a fresh
+  // object literal every render (now `useMemo`'d, see
+  // project-provider.tsx). The guard below makes sure this effect's body
+  // only actually runs once per "open" session regardless. (2) That
+  // guard alone wasn't the whole story: even a single, correct
+  // `.focus()` call on an option that isn't first in the list (here,
+  // "Modern Residence", 3rd of 6) makes the browser apply its own
+  // default scroll-into-view for that element — and for a list this
+  // short, that was enough to scroll the *first* project(s) out of view
+  // above it on the very first open, before the user ever touched their
+  // scroll wheel. `{ preventScroll: true }` stops that implicit scroll,
+  // and the list's own scroll position is then explicitly reset to the
+  // top, so opening it always starts from the first project, with the
+  // selected one simply marked (checked, highlighted) wherever it falls
+  // — never auto-scrolled past. Keyboard Arrow-key navigation after that
+  // still scrolls normally to follow the user's focus (see
+  // `focusOption` below), since only this initial on-open focus needed
+  // `preventScroll`.
+  const hasFocusedForThisOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      hasFocusedForThisOpenRef.current = false;
+      return;
+    }
+    if (hasFocusedForThisOpenRef.current) return;
+    hasFocusedForThisOpenRef.current = true;
     const selectedIndex = projects.findIndex((p) => p.id === selected?.id);
-    optionRefs.current[selectedIndex >= 0 ? selectedIndex : 0]?.focus();
+    optionRefs.current[selectedIndex >= 0 ? selectedIndex : 0]?.focus({ preventScroll: true });
+    if (listRef.current) listRef.current.scrollTop = 0;
   }, [open, projects, selected]);
 
   function closeAndRefocusTrigger() {
@@ -122,9 +151,38 @@ export function ProjectSelector() {
 
       {open && (
         <ul
+          ref={listRef}
           role="listbox"
           onKeyDown={handleListKeyDown}
-          className="absolute left-0 z-50 mt-2 w-64 overflow-hidden rounded-md border border-border bg-surface py-1 shadow-card"
+          // ACTUAL ROOT CAUSE, found by opening this dropdown in a real
+          // browser against the running app and measuring its on-screen
+          // position directly (getBoundingClientRect / window.scrollY) —
+          // every earlier "fix" below (max-h, overflow-y-auto,
+          // overscroll-contain, the memoized context value, preventScroll
+          // on focus) was chasing a scrolling problem this never actually
+          // had. `window.scrollY` stayed 0 the whole time: the *page*
+          // never scrolled, and this list's own internal scrollTop was 0
+          // too — nothing was being clipped or auto-scrolled. The real
+          // defect was POSITIONING: this `<ul>` was `absolute` with no
+          // `top-*` class, so the browser fell back to computing its
+          // position from where it would've sat in normal flow — and
+          // because its parent (`containerRef`, just above) is a
+          // `flex items-center` row, that fallback centers a tall
+          // absolutely-positioned box around the row's vertical center
+          // instead of placing it below it. Measured live: with this list
+          // ~320px tall, its top edge landed at -124px relative to the
+          // viewport — almost entirely above the visible window, cutting
+          // off exactly the first few projects — on the very first open,
+          // every time, regardless of scroll position. `top-full` pins it
+          // to the bottom of its (short, button-height) container instead
+          // of relying on that broken auto-position fallback; `mt-2` then
+          // adds the small intentional gap below the trigger. The other
+          // classes (max-h-80/overflow-y-auto for 6+ projects,
+          // overflow-x-hidden for the rounded corners, overscroll-contain
+          // so an exhausted internal scroll never chains to the page) are
+          // all still correct and kept, they just weren't the fix for
+          // what was actually being reported.
+          className="absolute left-0 top-full z-50 mt-2 max-h-80 w-64 overflow-y-auto overflow-x-hidden overscroll-contain rounded-md border border-border bg-surface py-1 shadow-card"
         >
           {projects.map((project, index) => (
             <li key={project.id}>

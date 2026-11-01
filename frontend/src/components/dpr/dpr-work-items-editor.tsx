@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFieldArray, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
-import { Plus, Trash2, Link2 } from "lucide-react";
+import { Plus, Trash2, Link2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -123,7 +123,17 @@ function WorkItemRow({
   const todayQty = useWatch({ control, name: `workItems.${index}.todayQty` });
   const plannedQty = useWatch({ control, name: `workItems.${index}.plannedQty` });
   const otherUom = useWatch({ control, name: `workItems.${index}.otherUom` });
+  const scheduleActivityId = useWatch({ control, name: `workItems.${index}.scheduleActivityId` });
   const [category, setCategory] = useCategoryState(workItemMasterId);
+
+  // BrickBasket spec-review correction: Today's Qty only flows into
+  // Schedule Tracking's progress/delay display when this row is linked to
+  // a Schedule activity (§7E) — but the link is opt-in with no prior
+  // indication when it's been skipped, so a PM could log real progress
+  // here that silently never shows up on Schedule. Nudge, don't block:
+  // the link stays optional (not every DPR line has a matching Schedule
+  // activity), this just makes the consequence visible in the moment.
+  const hasUnlinkedProgress = Number(todayQty) > 0 && !scheduleActivityId;
 
   const master = getDPRWorkItem(workItemMasterId);
   const options = dprWorkItemsByCategory(category);
@@ -259,6 +269,12 @@ function WorkItemRow({
               </option>
             ))}
           </Select>
+          {hasUnlinkedProgress && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-warning">
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Today&apos;s Qty won&apos;t show up in Schedule Tracking until this row is linked to an activity.
+            </p>
+          )}
         </div>
 
         <div className="lg:col-span-2">

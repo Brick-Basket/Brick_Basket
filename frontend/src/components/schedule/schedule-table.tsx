@@ -43,6 +43,7 @@ export function ScheduleTable({
     {
       key: "quantity",
       header: "Quantity",
+      align: "right",
       render: (a) => `${a.quantity.toLocaleString("en-IN")} ${a.uom}`,
     },
     {
@@ -89,6 +90,7 @@ export function ScheduleTable({
     {
       key: "delay",
       header: "Delay",
+      align: "right",
       render: (a) => {
         // FRONTEND IMPLEMENTATION DECISION (post-Part-20 stabilization
         // pass, Phase 3): the owner's "delay-in-days reflection" requirement

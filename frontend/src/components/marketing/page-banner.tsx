@@ -54,7 +54,10 @@ export function PageBanner({ pageKey }: { pageKey: PageBannerKey }) {
         </g>
       </svg>
       <div className="container relative py-12 md:py-16">
-        <h1 className="font-heading text-3xl font-extrabold md:text-4xl">{title}</h1>
+        {/* leading-snug — same Devanagari line-overlap fix as HeroSection/
+            SectionHeading/ClosingCtaSection; a longer Hindi page title can
+            wrap here too. See docs/CHANGELOG.md. */}
+        <h1 className="font-heading text-3xl font-extrabold leading-snug md:text-4xl">{title}</h1>
         <nav aria-label="Breadcrumb" className="mt-3 flex items-center gap-1.5 text-sm text-white/80">
           <Link href={PUBLIC_ROUTES.home} className="hover:text-white">
             {t("nav.home")}

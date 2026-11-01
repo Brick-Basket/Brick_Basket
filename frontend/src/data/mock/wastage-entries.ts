@@ -2,7 +2,7 @@ import type { WastageEntry } from "@/types/domain/wastage-entry";
 
 /**
  * Mock/demo dataset only — never imported outside
- * src/lib/api/adapters/wastage-adapter.ts. Spread across both projects
+ * src/lib/api/adapters/wastage-adapter.ts. Spread across five projects
  * and a mix of materials (including `"other"`) to exercise the
  * summary view's grouping.
  */
@@ -77,5 +77,48 @@ export const mockWastageEntries: WastageEntry[] = [
     recordedAt: "2026-08-28T06:00:00.000Z",
     createdAt: "2026-08-28T06:10:00.000Z",
     updatedAt: "2026-08-28T06:10:00.000Z",
+  },
+  {
+    id: "waste_6",
+    projectId: "proj_riverside_apartments",
+    material: "tmt_steel",
+    uom: "kg",
+    quantity: 45,
+    value: 2_925,
+    reason: "Offcuts from column cage fabrication beyond planned wastage allowance.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-09-07T06:00:00.000Z",
+    createdAt: "2026-09-07T06:10:00.000Z",
+    updatedAt: "2026-09-07T06:10:00.000Z",
+  },
+  {
+    id: "waste_7",
+    projectId: "proj_heritage_resort",
+    material: "other",
+    otherMaterialName: "Natural Stone Cladding (Dholpur)",
+    uom: "sq.ft",
+    quantity: 60,
+    value: 8_280,
+    reason: "Cracked slabs discovered on unpacking — damaged in transit.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-08-15T06:00:00.000Z",
+    createdAt: "2026-08-15T06:10:00.000Z",
+    updatedAt: "2026-08-15T06:10:00.000Z",
+  },
+  {
+    id: "waste_8",
+    projectId: "proj_gorakhpur_business_park",
+    material: "tmt_steel",
+    uom: "kg",
+    quantity: 55,
+    value: 3_850,
+    reason: "Offcuts from column cage fabrication beyond planned wastage allowance.",
+    recordedBy: "u_store",
+    recordedByName: "Meera Joshi",
+    recordedAt: "2026-09-25T06:00:00.000Z",
+    createdAt: "2026-09-25T06:10:00.000Z",
+    updatedAt: "2026-09-25T06:10:00.000Z",
   },
 ];

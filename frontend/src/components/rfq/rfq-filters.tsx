@@ -5,11 +5,19 @@ import { Select } from "@/components/ui/select";
 import { FilterBar } from "@/components/domain/filter-bar";
 import { RFQ_STATUS_CONFIG, RFQ_STATUS_ORDER } from "@/components/rfq/rfq-status-config";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectContext } from "@/components/providers/project-provider";
 import type { RFQListParams } from "@/lib/api/adapters/rfq-adapter";
 import type { RFQStatus } from "@/types/domain/rfq";
 
+/**
+ * BrickBasket "Global Project Selector" correction: picking a specific
+ * project here now also updates the shared `ProjectProvider` selection,
+ * the same one-way-on-pick pattern `DPRFilters` uses — "All projects"
+ * stays a real, supported view and does not clear the shared selection.
+ */
 export function RFQFilters({ value, onChange }: { value: RFQListParams; onChange: (next: RFQListParams) => void }) {
   const { projects: allProjects } = useProjects();
+  const { setSelectedId } = useProjectContext();
   return (
     <FilterBar>
       <SearchInput
@@ -21,7 +29,11 @@ export function RFQFilters({ value, onChange }: { value: RFQListParams; onChange
       />
       <Select
         value={value.projectId ?? ""}
-        onChange={(e) => onChange({ ...value, projectId: e.target.value || undefined, page: 1 })}
+        onChange={(e) => {
+          const projectId = e.target.value || undefined;
+          onChange({ ...value, projectId, page: 1 });
+          if (projectId) setSelectedId(projectId);
+        }}
         className="w-full sm:w-48"
         aria-label="Filter by project"
       >

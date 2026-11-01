@@ -54,6 +54,7 @@ export function DocumentTable({
       key: "size",
       header: "Size",
       hideOnMobile: true,
+      align: "right",
       render: (d) => formatBytes(d.fileSizeBytes),
     },
     {

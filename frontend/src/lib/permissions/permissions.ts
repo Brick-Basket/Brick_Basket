@@ -8,6 +8,14 @@
  * The full role→permission matrix is not owner-confirmed (see
  * docs/OPEN_QUESTIONS.md #2) — this is a frontend default so navigation and
  * action guards have something real to key off during development.
+ *
+ * `po:release` vs `po:issue` — split into two distinct permission keys by
+ * the BrickBasket business-requirements audit pass (see docs/CHANGELOG.md),
+ * closing docs/OPEN_QUESTIONS.md #31c: Release and Issue used to share one
+ * `po:issue` key with no way to grant one capability without the other.
+ * Both current PO-handling roles (`admin`, `purchaser`) hold both keys, so
+ * this is additive — no existing access changes. `po-detail.tsx` now gates
+ * its Release action on `po:release` and its Issue action on `po:issue`.
  */
 export type Role =
   | "admin"
@@ -41,6 +49,8 @@ export type PermissionKey =
   | "vendors:read"
   | "vendors:write"
   | "vendors:assess"
+  | "customers:read"
+  | "customers:write"
   | "ace:read"
   | "ace:write"
   | "requisitions:read"
@@ -52,6 +62,7 @@ export type PermissionKey =
   | "po:create"
   | "po:approve:level1"
   | "po:approve:level2"
+  | "po:release"
   | "po:issue"
   | "grn:read"
   | "grn:create"
@@ -92,6 +103,8 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "vendors:read",
     "vendors:write",
     "vendors:assess",
+    "customers:read",
+    "customers:write",
     "ace:read",
     "ace:write",
     "requisitions:read",
@@ -103,6 +116,7 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "po:create",
     "po:approve:level1",
     "po:approve:level2",
+    "po:release",
     "po:issue",
     "grn:read",
     "grn:create",
@@ -133,6 +147,8 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "leads:read",
     "leads:write",
     "documents:read",
+    "customers:read",
+    "customers:write",
     "ace:read",
     "requisitions:read",
     "requisitions:create",
@@ -167,6 +183,7 @@ export const ROLE_PERMISSIONS: Record<Role, PermissionKey[]> = {
     "rfq:compare",
     "po:read",
     "po:create",
+    "po:release",
     "po:issue",
   ],
   store_personnel: [

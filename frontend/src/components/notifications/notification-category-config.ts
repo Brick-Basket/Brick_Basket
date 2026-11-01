@@ -7,6 +7,9 @@ import {
   ReceiptText,
   UserPlus,
   CalendarClock,
+  Camera,
+  Wallet,
+  TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { NotificationCategory, NotificationSeverity } from "@/types/domain/notification";
@@ -22,6 +25,10 @@ export const NOTIFICATION_CATEGORY_CONFIG: Record<NotificationCategory, { label:
   schedule: { label: "Schedule", icon: CalendarClock },
   contract: { label: "Contract", icon: FileWarning },
   mrc: { label: "Material Receipt Certificate", icon: BellRing },
+  // Added in the Customer Module notifications follow-up (docs/OPEN_QUESTIONS.md #81) — see notifications-adapter.ts's header comment.
+  site_update: { label: "Site Update", icon: Camera },
+  payment: { label: "Payment", icon: Wallet },
+  project_progress: { label: "Progress", icon: TrendingUp },
 };
 
 /** `StatusBadge`-style tone per `NotificationSeverity`. */

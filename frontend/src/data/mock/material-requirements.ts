@@ -35,4 +35,27 @@ export const mockMaterialRequirements: MaterialRequirement[] = [
   // req_7 — approved (feeds RFQ Management Part 9 → Purchase Orders Part 10)
   { id: "mr_13", requisitionId: "req_7", source: "additional", description: "PVC Conduit Pipes, 25mm", uom: "meter", quantity: 500 },
   { id: "mr_14", requisitionId: "req_7", source: "additional", description: "Exterior Textured Paint", uom: "litre", quantity: 90, brand: "Asian Paints" },
+
+  // req_8 — approved (Riverside Apartments, feeds RFQ Management → Purchase Orders)
+  { id: "mr_15", requisitionId: "req_8", source: "predefined", aceItemId: "ace_14", description: "TMT Steel (Fe 500), 10mm", uom: "kg", quantity: 2_200 },
+  { id: "mr_16", requisitionId: "req_8", source: "predefined", aceItemId: "ace_15", description: "MCB Distribution Board, 8-way", uom: "each", quantity: 6 },
+
+  // req_9 — submitted (Riverside Apartments)
+  { id: "mr_17", requisitionId: "req_9", source: "predefined", aceItemId: "ace_13", description: "Ready-Mix Concrete M25", uom: "cu.ft", quantity: 5_200 },
+  { id: "mr_18", requisitionId: "req_9", source: "additional", description: "Curing compound", uom: "litre", quantity: 40 },
+
+  // req_10 — approved (Heritage Resort, feeds RFQ Management → Purchase Orders)
+  { id: "mr_19", requisitionId: "req_10", source: "predefined", aceItemId: "ace_18", description: "3-Phase MCB Distribution Panel", uom: "each", quantity: 4 },
+  { id: "mr_20", requisitionId: "req_10", source: "predefined", aceItemId: "ace_17", description: "Natural Stone Cladding (Dholpur)", uom: "sq.ft", quantity: 3_200 },
+
+  // req_11 — draft (Heritage Resort)
+  { id: "mr_21", requisitionId: "req_11", source: "predefined", aceItemId: "ace_19", description: "CPVC Pipe, 1.5 inch", uom: "meter", quantity: 400 },
+
+  // req_12 — approved (Gorakhpur Business Park, feeds RFQ Management → Purchase Orders)
+  { id: "mr_22", requisitionId: "req_12", source: "predefined", aceItemId: "ace_22", description: "TMT Steel (Fe 500), 16mm", uom: "kg", quantity: 2_800 },
+  { id: "mr_23", requisitionId: "req_12", source: "predefined", aceItemId: "ace_23", description: "Aluminium Composite Panel (ACP) Cladding", uom: "sq.m", quantity: 450 },
+
+  // req_13 — submitted (Gorakhpur Business Park)
+  { id: "mr_24", requisitionId: "req_13", source: "predefined", aceItemId: "ace_24", description: "VRF Air Conditioning Outdoor Unit", uom: "each", quantity: 6 },
+  { id: "mr_25", requisitionId: "req_13", source: "predefined", aceItemId: "ace_21", description: "Ready-Mix Concrete M30", uom: "cu.ft", quantity: 6_000 },
 ];

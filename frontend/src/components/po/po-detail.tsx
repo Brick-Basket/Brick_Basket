@@ -59,11 +59,16 @@ export function PODetail({
   const { result: grnLookup } = useGRNs({ purchaseOrderId, pageSize: 50 });
 
   const { submit: updatePO, status: updateStatus, error: updateError } = useUpdatePurchaseOrder();
-  const { submit: submitPO, status: submitStatus } = useSubmitPurchaseOrder();
+  // BUG FIX: none of these three hooks' `error` used to be destructured at
+  // all, so a failed Submit/Release/Issue left the confirmation dialog open
+  // (correctly gated below) but showed absolutely nothing explaining why —
+  // indistinguishable from a frozen button. See each ConfirmationDialog's
+  // new `error` prop below.
+  const { submit: submitPO, status: submitStatus, error: submitError } = useSubmitPurchaseOrder();
   const { submit: decideL1, status: decideL1Status, error: decideL1Error } = useDecideLevel1();
   const { submit: decideL2, status: decideL2Status, error: decideL2Error } = useDecideLevel2();
-  const { submit: release, status: releaseStatus } = useReleasePurchaseOrder();
-  const { submit: issue, status: issueStatus } = useIssuePurchaseOrder();
+  const { submit: release, status: releaseStatus, error: releaseError } = useReleasePurchaseOrder();
+  const { submit: issue, status: issueStatus, error: issueError } = useIssuePurchaseOrder();
   const { projects: allProjects } = useProjects();
   const { result: vendorsResult } = useVendors({});
   const allVendors = vendorsResult?.items ?? [];
@@ -335,7 +340,10 @@ export function PODetail({
       )}
 
       {purchaseOrder.status === "approved" && (
-        <PermissionGuard permission="po:issue">
+        // docs/OPEN_QUESTIONS.md #31c — Release now gated on its own
+        // `po:release` key, separate from Issue's `po:issue` below (see
+        // docs/CHANGELOG.md for the audit pass that split them).
+        <PermissionGuard permission="po:release">
           <Card>
             <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
               <p className="text-sm text-ink-muted">Fully approved — release it to move toward issuance.</p>
@@ -415,6 +423,7 @@ export function PODetail({
         title="Submit for approval?"
         description="This locks the terms and sends the PO into the two-level approval workflow."
         confirmLabel="Submit"
+        error={submitError}
         loading={submitStatus === "loading"}
       />
       <ConfirmationDialog
@@ -424,6 +433,7 @@ export function PODetail({
         title="Release this Purchase Order?"
         description="Marks it ready to be issued to the vendor."
         confirmLabel="Release"
+        error={releaseError}
         loading={releaseStatus === "loading"}
       />
       <ConfirmationDialog
@@ -433,6 +443,7 @@ export function PODetail({
         title="Issue this Purchase Order?"
         description="Dispatches the PO to the vendor by email (mocked) and marks it issued."
         confirmLabel="Issue"
+        error={issueError}
         loading={issueStatus === "loading"}
       />
 

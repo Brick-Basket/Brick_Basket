@@ -107,6 +107,42 @@ function useMutation<Args extends unknown[], Result>(fn: (...args: Args) => Prom
   return { submit, status, error };
 }
 
+/**
+ * Every GRN line item across every GRN, unfiltered — backs the create
+ * form's "how much of this PO line has already been received?" awareness
+ * (same underlying adapter call the MRC picker already uses for a
+ * different purpose, `listAllLineItems`). Lets the form default each
+ * line's Received Quantity to what's actually still outstanding instead
+ * of blindly re-proposing the full originally-ordered amount every time,
+ * and show that context inline rather than only surfacing it as a
+ * submit-time over-receipt error. See `GRNCreateForm`.
+ */
+export function useAllGRNLineItems() {
+  const [status, setStatus] = useState<Status>("idle");
+  const [lineItems, setLineItems] = useState<GRNLineItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+    grnAdapter
+      .listAllLineItems()
+      .then((items) => {
+        if (cancelled) return;
+        setLineItems(items);
+        setStatus("success");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { status, lineItems };
+}
+
 export function useCreateGRN() {
   return useMutation((input: CreateGRNInput, actor: GRNActor) => grnAdapter.create(input, actor));
 }

@@ -582,7 +582,7 @@ export function CostEstimatorSection({
                 {
                   key: "cost",
                   header: t("costEstimator.estimatedCost"),
-                  className: "text-right",
+                  align: "right",
                   render: (pkg) => (pkg.low === pkg.high ? formatINR(pkg.low) : `${formatINR(pkg.low)} – ${formatINR(pkg.high)}`),
                 },
               ]}

@@ -56,6 +56,7 @@ export function TaxRecordTable({
       key: "amount",
       header: "Amount",
       sortKey: "amount",
+      align: "right",
       render: (r) => formatINR(r.amount),
     },
     {

@@ -46,6 +46,15 @@ const REASONS = [
  * page and the Home page's one-pager section render the exact same copy —
  * see `docs/OPEN_QUESTIONS.md` #46 for the drift problem this pattern
  * avoids.
+ *
+ * Heading color: owner asked to keep "Why Choose BrickBasket?" in brand
+ * red here specifically, not `SectionHeading`'s shared default `text-ink` —
+ * passed via `SectionHeading`'s new `titleClassName` prop so every other
+ * section's heading (About, Services, FAQ, etc.) is unaffected.
+ *
+ * No eyebrow: owner asked to remove the "WHY BRICKBASKET" label above the
+ * heading — `SectionHeading`'s `eyebrow` prop is omitted here (it's
+ * optional and renders nothing when absent), leaving just the red title.
  */
 export function WhyUsSection({
   id,
@@ -62,7 +71,11 @@ export function WhyUsSection({
   return (
     <section id={id} className={cn("container py-16 md:py-20", className)}>
       {showHeading && (
-        <SectionHeading eyebrow={t("whyUs.headingEyebrow")} title={t("whyUs.headingTitle")} className="mb-10" />
+        <SectionHeading
+          title={t("whyUs.headingTitle")}
+          titleClassName="text-brand-red"
+          className="mb-10"
+        />
       )}
       <div className="grid gap-10 md:grid-cols-2 md:items-center">
         <ImagePlaceholder

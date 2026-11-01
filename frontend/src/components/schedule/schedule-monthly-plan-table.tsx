@@ -46,6 +46,7 @@ export function ScheduleMonthlyPlanTable({ activities }: { activities: ScheduleA
       (month): DataTableColumn<ScheduleActivity> => ({
         key: month,
         header: formatMonthKey(month),
+        align: "right",
         render: (a) => {
           const qty = getPlannedQuantityForMonth(a.monthlyPlan, month);
           return qty === null ? <span className="text-ink-muted">—</span> : <span>{qty.toLocaleString("en-IN")}</span>;
@@ -55,6 +56,7 @@ export function ScheduleMonthlyPlanTable({ activities }: { activities: ScheduleA
     {
       key: "total",
       header: "Total Planned",
+      align: "right",
       render: (a) => (
         <span className="font-medium text-ink">
           {getMonthlyPlanTotal(a.monthlyPlan).toLocaleString("en-IN")} {a.uom}

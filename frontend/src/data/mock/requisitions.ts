@@ -3,7 +3,7 @@ import type { PurchaseRequisition } from "@/types/domain/requisition";
 /**
  * Mock/demo dataset only — never imported outside
  * src/lib/api/adapters/requisitions-adapter.ts. Covers every status
- * (`req_4` is rejected, with a `rejectReason`) across all 3 mock projects
+ * (`req_4` is rejected, with a `rejectReason`) across all 6 mock projects
  * and both requester roles the owner requirements name (Project Manager,
  * Admin).
  */
@@ -105,5 +105,95 @@ export const mockRequisitions: PurchaseRequisition[] = [
     rejectReason: null,
     createdAt: "2026-08-14T05:00:00.000Z",
     updatedAt: "2026-08-16T09:00:00.000Z",
+  },
+  // req_8–11 — Riverside Apartments/Heritage Resort (added for broader demo
+  // coverage, see mock/projects.ts). req_8 and req_10 are approved and feed
+  // RFQ Management → Purchase Orders, same as req_6/req_7 above.
+  {
+    id: "req_8",
+    requisitionNumber: "BB-REQ-2026-008",
+    projectId: "proj_riverside_apartments",
+    requestedBy: "u_pm",
+    requestedByName: "Karan Mehta",
+    status: "approved",
+    notes: "TMT steel and distribution boards for Block B, Phase 1 — feeds RFQ Management and Purchase Orders.",
+    submittedAt: "2026-08-18T06:00:00.000Z",
+    decidedAt: "2026-08-19T08:00:00.000Z",
+    rejectReason: null,
+    createdAt: "2026-08-17T05:00:00.000Z",
+    updatedAt: "2026-08-19T08:00:00.000Z",
+  },
+  {
+    id: "req_9",
+    requisitionNumber: "BB-REQ-2026-009",
+    projectId: "proj_riverside_apartments",
+    requestedBy: "u_admin",
+    requestedByName: "Aditi Sharma",
+    status: "submitted",
+    notes: "Ready-mix concrete and floor tiles for the Block B podium slab.",
+    submittedAt: "2026-09-12T06:00:00.000Z",
+    decidedAt: null,
+    rejectReason: null,
+    createdAt: "2026-09-11T05:00:00.000Z",
+    updatedAt: "2026-09-12T06:00:00.000Z",
+  },
+  {
+    id: "req_10",
+    requisitionNumber: "BB-REQ-2026-010",
+    projectId: "proj_heritage_resort",
+    requestedBy: "u_admin",
+    requestedByName: "Aditi Sharma",
+    status: "approved",
+    notes: "3-phase distribution panels and stone cladding for the resort's main block — feeds RFQ Management and Purchase Orders.",
+    submittedAt: "2026-07-28T06:00:00.000Z",
+    decidedAt: "2026-07-29T08:00:00.000Z",
+    rejectReason: null,
+    createdAt: "2026-07-27T05:00:00.000Z",
+    updatedAt: "2026-07-29T08:00:00.000Z",
+  },
+  {
+    id: "req_11",
+    requisitionNumber: "BB-REQ-2026-011",
+    projectId: "proj_heritage_resort",
+    requestedBy: "u_pm",
+    requestedByName: "Karan Mehta",
+    status: "draft",
+    notes: "CPVC piping for the spa block bathrooms — still finalizing scope.",
+    submittedAt: null,
+    decidedAt: null,
+    rejectReason: null,
+    createdAt: "2026-09-14T06:00:00.000Z",
+    updatedAt: "2026-09-14T06:00:00.000Z",
+  },
+  // req_12/req_13 — Gorakhpur Business Park (added for broader demo
+  // coverage, see mock/projects.ts). req_12 is approved and feeds RFQ
+  // Management → Purchase Orders, same as req_8/req_10 above.
+  {
+    id: "req_12",
+    requisitionNumber: "BB-REQ-2026-012",
+    projectId: "proj_gorakhpur_business_park",
+    requestedBy: "u_pm",
+    requestedByName: "Karan Mehta",
+    status: "approved",
+    notes: "TMT steel and ACP cladding for the office tower's curtain wall — feeds RFQ Management and Purchase Orders.",
+    submittedAt: "2026-09-16T06:00:00.000Z",
+    decidedAt: "2026-09-17T08:00:00.000Z",
+    rejectReason: null,
+    createdAt: "2026-09-15T05:00:00.000Z",
+    updatedAt: "2026-09-17T08:00:00.000Z",
+  },
+  {
+    id: "req_13",
+    requisitionNumber: "BB-REQ-2026-013",
+    projectId: "proj_gorakhpur_business_park",
+    requestedBy: "u_admin",
+    requestedByName: "Aditi Sharma",
+    status: "submitted",
+    notes: "VRF outdoor units and ready-mix concrete for the podium slab.",
+    submittedAt: "2026-09-21T06:00:00.000Z",
+    decidedAt: null,
+    rejectReason: null,
+    createdAt: "2026-09-20T05:00:00.000Z",
+    updatedAt: "2026-09-21T06:00:00.000Z",
   },
 ];

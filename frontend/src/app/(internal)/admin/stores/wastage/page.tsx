@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LayoutGrid, Plus, Table as TableIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { usePermission } from "@/lib/permissions/use-permission";
 import { useWastageEntries } from "@/hooks/use-wastage";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { WastageFilters } from "@/components/wastage/wastage-filters";
 import { WastageTable } from "@/components/wastage/wastage-table";
 import { WastageSummary } from "@/components/wastage/wastage-summary";
@@ -50,6 +51,29 @@ function AdminWastageContent() {
   const [filters, setFilters] = useState<WastageListParams>({ page: 1, pageSize: PAGE_SIZE, sortBy: "recordedAt", sortDir: "desc" });
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<WastageEntry | null>(null);
+
+  // BrickBasket "Global Project Selector" correction: this page's own
+  // project filter follows the shared `ProjectProvider` selection on
+  // every change — not just once on load — so switching the project in
+  // the admin topbar while already on this page actually does
+  // something. That following stops the moment the user touches this
+  // page's own project filter directly (a specific project OR "All
+  // projects" — both count): from then on it's independently the
+  // user's own choice for the rest of this visit. A fresh visit
+  // (this component remounts on navigation) always re-seeds from
+  // whatever is currently shared.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: WastageListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
 
   const listParams: WastageListParams = view === "detail" ? filters : { ...filters, page: 1, pageSize: SUMMARY_PAGE_SIZE };
   const { status, error, result, refetch } = useWastageEntries(listParams);
@@ -94,7 +118,7 @@ function AdminWastageContent() {
         </div>
       </div>
 
-      <WastageFilters value={filters} onChange={setFilters} />
+      <WastageFilters value={filters} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

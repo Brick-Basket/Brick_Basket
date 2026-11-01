@@ -25,6 +25,7 @@ const vendorFormSchema = z
     tradeName: z.string().min(1, "Trade name is required"),
     gstCategory: z.enum(["registered", "non_registered"]),
     gstin: z.string().optional(),
+    panNumber: z.string().optional(),
     address: z.string().min(1, "Address is required"),
     msmeUdyamNumber: z.string().optional(),
     contactPerson: z.string().min(1, "Contact person is required"),
@@ -54,6 +55,10 @@ type VendorFormValues = z.infer<typeof vendorFormSchema>;
  * is only editable in `"create"` mode — a vendor's code is assigned once
  * from that series and is a permanent identifier afterward (see
  * `src/types/domain/vendor.ts`'s header comment).
+ *
+ * Document 2 correction: PAN Number was missing from the vendor profile —
+ * added as an optional field alongside the existing GSTIN/MSME-UDYAM
+ * identifiers.
  */
 export function VendorForm({
   mode,
@@ -81,6 +86,7 @@ export function VendorForm({
       tradeName: vendor?.tradeName ?? "",
       gstCategory: vendor?.gstCategory ?? "registered",
       gstin: vendor?.gstin ?? "",
+      panNumber: vendor?.panNumber ?? "",
       address: vendor?.address ?? "",
       msmeUdyamNumber: vendor?.msmeUdyamNumber ?? "",
       contactPerson: vendor?.contactPerson ?? "",
@@ -102,6 +108,7 @@ export function VendorForm({
       tradeName: values.tradeName,
       gstCategory: values.gstCategory,
       gstin: values.gstCategory === "registered" ? values.gstin : undefined,
+      panNumber: values.panNumber || undefined,
       address: values.address,
       msmeUdyamNumber: values.msmeUdyamNumber || undefined,
       contactPerson: values.contactPerson,
@@ -173,9 +180,14 @@ export function VendorForm({
         <Input id="vendor-address" invalid={!!errors.address} {...register("address")} />
       </FormField>
 
-      <FormField label="MSME/UDYAM Certificate Number (optional)" htmlFor="vendor-msme">
-        <Input id="vendor-msme" {...register("msmeUdyamNumber")} />
-      </FormField>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <FormField label="PAN Number (optional)" htmlFor="vendor-pan">
+          <Input id="vendor-pan" className="uppercase" {...register("panNumber")} />
+        </FormField>
+        <FormField label="MSME/UDYAM Certificate Number (optional)" htmlFor="vendor-msme">
+          <Input id="vendor-msme" {...register("msmeUdyamNumber")} />
+        </FormField>
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Contact Person" htmlFor="vendor-contact-person" required error={errors.contactPerson?.message}>

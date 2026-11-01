@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useSession } from "@/components/providers/auth-provider";
@@ -10,6 +13,33 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
 import { PORTAL_ROUTES, PUBLIC_ROUTES } from "@/lib/constants/routes";
+
+// UI FIX (broad audit pass): same gap, and same fix, as `LoginForm` — this
+// form used plain `useState` with `required`/`minLength` attributes on bare
+// `<input>`s while also setting `noValidate` on the `<form>`, so neither the
+// browser's native validation nor a custom inline error ever actually
+// surfaced required/format problems. Matches the rest of the app's zod +
+// react-hook-form + `FormField error` pattern; the cross-field
+// password-confirmation check (which zod can't express per-field as neatly)
+// stays as a `.superRefine()` targeting `confirmPassword`.
+const registerFormSchema = z
+  .object({
+    name: z.string().min(1, "Full name is required"),
+    email: z.string().min(1, "Email is required").email("Enter a valid email address"),
+    password: z.string().min(6, "Password must be at least 6 characters"),
+    confirmPassword: z.string().min(1, "Confirm your password"),
+  })
+  .superRefine((val, ctx) => {
+    if (val.password !== val.confirmPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Passwords don't match.",
+        path: ["confirmPassword"],
+      });
+    }
+  });
+
+type RegisterFormValues = z.infer<typeof registerFormSchema>;
 
 /**
  * Demo-mode self-registration: creates a new `customer` account (see
@@ -20,17 +50,21 @@ import { PORTAL_ROUTES, PUBLIC_ROUTES } from "@/lib/constants/routes";
  * (src/lib/auth/mock-users.ts). See docs/AUTHENTICATION.md.
  */
 export function RegisterForm() {
-  const { status, session, register } = useSession();
+  const { status, session, register: registerSession } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerFormSchema),
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+  });
 
   useEffect(() => {
     if (status === "authenticated" && session) {
@@ -38,21 +72,16 @@ export function RegisterForm() {
     }
   }, [status, session, next, router]);
 
-  async function doRegister() {
+  const submitting = isSubmitting;
+
+  async function onSubmit(values: RegisterFormValues) {
     setError(null);
-    if (password !== confirmPassword) {
-      setError("Passwords don't match.");
-      return;
-    }
-    setSubmitting(true);
     try {
-      const newSession = await register({ name, email, password });
+      const newSession = await registerSession({ name: values.name, email: values.email, password: values.password });
       router.replace(next ?? PORTAL_ROUTES.home);
       void newSession;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
-    } finally {
-      setSubmitting(false);
     }
   }
 
@@ -72,54 +101,35 @@ export function RegisterForm() {
           Demo mode — this creates a local customer account, not a real one.
         </p>
 
-        <form
-          className="mt-6 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            doRegister();
-          }}
-          noValidate
-        >
-          <FormField label="Full name" htmlFor="register-name" required>
-            <Input
-              id="register-name"
-              type="text"
-              autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+        <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <FormField label="Full name" htmlFor="register-name" required error={errors.name?.message}>
+            <Input id="register-name" type="text" autoComplete="name" invalid={!!errors.name} {...register("name")} />
           </FormField>
-          <FormField label="Email" htmlFor="register-email" required>
-            <Input
-              id="register-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+          <FormField label="Email" htmlFor="register-email" required error={errors.email?.message}>
+            <Input id="register-email" type="email" autoComplete="email" invalid={!!errors.email} {...register("email")} />
           </FormField>
-          <FormField label="Password" htmlFor="register-password" required hint="At least 6 characters.">
+          <FormField
+            label="Password"
+            htmlFor="register-password"
+            required
+            error={errors.password?.message}
+            hint={errors.password?.message ? undefined : "At least 6 characters."}
+          >
             <Input
               id="register-password"
               type="password"
               autoComplete="new-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
+              invalid={!!errors.password}
+              {...register("password")}
             />
           </FormField>
-          <FormField label="Confirm password" htmlFor="register-confirm-password" required>
+          <FormField label="Confirm password" htmlFor="register-confirm-password" required error={errors.confirmPassword?.message}>
             <Input
               id="register-confirm-password"
               type="password"
               autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              minLength={6}
+              invalid={!!errors.confirmPassword}
+              {...register("confirmPassword")}
             />
           </FormField>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/domain/error-state";
 import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
 import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { useDPRs } from "@/hooks/use-dpr";
 import { DPRFilters } from "@/components/dpr/dpr-filters";
 import { DPRTable } from "@/components/dpr/dpr-table";
@@ -34,12 +35,39 @@ export default function AdminDPRPage() {
 
 function AdminDPRContent() {
   const router = useRouter();
+  const { selected } = useProjectContext();
   const [filters, setFilters] = useState<DPRListParams>({
     page: 1,
     pageSize: PAGE_SIZE,
     sortBy: "reportDate",
     sortDir: "desc",
   });
+
+  // BrickBasket "Project Management Navigation and Persistent Project
+  // Selection" correction (extended by "Global Project Selector"): this
+  // page's own project filter follows the shared `ProjectProvider`
+  // selection on every change, not just once on load — e.g. arriving
+  // here right after picking a project on Schedule shows this page
+  // already scoped to it, and so does switching projects in the admin
+  // topbar while already on DPR. That following stops the moment the
+  // user touches this page's own project filter directly (a specific
+  // project OR "All projects" — both count, see the wrapped `onChange`
+  // below): from then on it's independently the user's own choice for
+  // the rest of this visit, same guarantee `DPRFilters` already
+  // documents for "All projects". A fresh visit (this component
+  // remounts on navigation) always re-seeds from whatever is shared.
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: DPRListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
+
   const { status, error, result, refetch } = useDPRs(filters);
 
   const handleSortChange = (key: string) => {
@@ -65,7 +93,7 @@ function AdminDPRContent() {
         </PermissionGuard>
       </div>
 
-      <DPRFilters value={filters} onChange={setFilters} />
+      <DPRFilters value={filters} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

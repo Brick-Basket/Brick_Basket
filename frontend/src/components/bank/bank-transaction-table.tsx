@@ -47,18 +47,21 @@ export function BankTransactionTable({
       key: "yearOfExecution",
       header: "Year",
       sortKey: "yearOfExecution",
+      align: "right",
       render: (t) => t.yearOfExecution,
     },
     {
       key: "paymentAmount",
       header: "Amount",
       sortKey: "paymentAmount",
+      align: "right",
       render: (t) => formatINR(t.paymentAmount),
     },
     {
       key: "taxAmount",
       header: "Tax",
       hideOnMobile: true,
+      align: "right",
       render: (t) => formatINR(t.taxAmount),
     },
     {

@@ -34,6 +34,7 @@ export const ADMIN_ROUTES = {
   leads: "/admin/leads",
   contracts: "/admin/contracts",
   documents: "/admin/documents",
+  customers: "/admin/customers",
   vendors: "/admin/vendors",
   ace: "/admin/supply-chain/ace",
   requisitions: "/admin/supply-chain/requisitions",

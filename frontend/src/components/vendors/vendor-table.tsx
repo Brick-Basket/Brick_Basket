@@ -58,6 +58,7 @@ export function VendorTable({
       key: "rating",
       header: "Rating",
       sortKey: "averageRating",
+      align: "right",
       render: (v) => (
         <div>
           <p className="text-ink">{formatRating(v.averageRating)}</p>
@@ -73,6 +74,7 @@ export function VendorTable({
       key: "turnover",
       header: "Turnover",
       hideOnMobile: true,
+      align: "right",
       render: (v) => formatINR(v.turnover),
     },
   ];

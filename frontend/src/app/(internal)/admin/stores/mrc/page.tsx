@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useMRCs } from "@/hooks/use-mrc";
 import { useCustomers } from "@/hooks/use-customers";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { MRCFilters } from "@/components/mrc/mrc-filters";
 import { MRCTable } from "@/components/mrc/mrc-table";
 import { ADMIN_ROUTES } from "@/lib/constants/routes";
@@ -41,6 +42,30 @@ function AdminMRCContent() {
     sortBy: "createdAt",
     sortDir: "desc",
   });
+
+  // BrickBasket "Global Project Selector" correction: this page's own
+  // project filter follows the shared `ProjectProvider` selection on
+  // every change — not just once on load — so switching the project in
+  // the admin topbar while already on this page actually does
+  // something. That following stops the moment the user touches this
+  // page's own project filter directly (a specific project OR "All
+  // projects" — both count): from then on it's independently the
+  // user's own choice for the rest of this visit. A fresh visit
+  // (this component remounts on navigation) always re-seeds from
+  // whatever is currently shared.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: MRCListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
+
   const { status, error, result, refetch } = useMRCs(filters);
   const { customers } = useCustomers();
   const customersById = new Map(customers.map((c) => [c.id, c]));
@@ -68,7 +93,7 @@ function AdminMRCContent() {
         </PermissionGuard>
       </div>
 
-      <MRCFilters value={filters} customers={customers} onChange={setFilters} />
+      <MRCFilters value={filters} customers={customers} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

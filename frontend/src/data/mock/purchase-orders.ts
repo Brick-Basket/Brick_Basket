@@ -8,6 +8,14 @@ import type { PurchaseOrder } from "@/types/domain/purchase-order";
  * `po_1` issued (full lifecycle, both levels approved), `po_2` rejected at
  * level 1, `po_3` pending level 2 (level 1 already approved), `po_4` still
  * draft (not yet submitted). All monetary/terms values are demo/mock only.
+ *
+ * `po_10` (Gorakhpur Business Park, see below) covers `"released"` — the
+ * one state this original set, and the `po_5`–`po_8` Riverside/Heritage
+ * additions, never exercised: both approval levels passed and the PO
+ * released, but not yet issued to the vendor. The owner's requirements
+ * name "Release state" and "Issue state" as two separate milestones
+ * (see this file's type header comment), so a PO sitting between them
+ * is worth having real demo data for.
  */
 export const mockPurchaseOrders: PurchaseOrder[] = [
   {
@@ -94,5 +102,143 @@ export const mockPurchaseOrders: PurchaseOrder[] = [
     emailDispatchedAt: null,
     createdAt: "2026-08-21T05:30:00.000Z",
     updatedAt: "2026-08-21T05:30:00.000Z",
+  },
+  // po_5–8 — from rfq_4 (Riverside Apartments) and rfq_5 (Heritage Resort),
+  // added for broader demo coverage. po_6 is `pending_approval_l1` with no
+  // approval recorded yet — the one state the original po_1–4 set didn't
+  // cover (po_3 was already past level 1, awaiting level 2 only).
+  {
+    id: "po_5",
+    poNumber: "BB-PO-2026-005",
+    rfqId: "rfq_4",
+    requisitionId: "req_8",
+    projectId: "proj_riverside_apartments",
+    vendorId: "vendor_9",
+    status: "issued",
+    rejectedAtLevel: null,
+    termsAndConditions:
+      "Payment: 30 days from delivery, against invoice. Delivery: within 10 days of PO issuance, to site store. All goods subject to inspection and GRN on receipt.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-08-26T06:00:00.000Z",
+    releasedAt: "2026-08-29T05:00:00.000Z",
+    issuedAt: "2026-08-29T06:00:00.000Z",
+    emailDispatchStatus: "sent",
+    emailDispatchedAt: "2026-08-29T06:00:00.000Z",
+    createdAt: "2026-08-26T05:00:00.000Z",
+    updatedAt: "2026-08-29T06:00:00.000Z",
+  },
+  {
+    id: "po_6",
+    poNumber: "BB-PO-2026-006",
+    rfqId: "rfq_4",
+    requisitionId: "req_8",
+    projectId: "proj_riverside_apartments",
+    vendorId: "vendor_3",
+    status: "pending_approval_l1",
+    rejectedAtLevel: null,
+    termsAndConditions: "Payment: 30 days from delivery, against invoice. Delivery: within 7 days of PO issuance, to site store.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-08-27T06:00:00.000Z",
+    releasedAt: null,
+    issuedAt: null,
+    emailDispatchStatus: "not_sent",
+    emailDispatchedAt: null,
+    createdAt: "2026-08-26T05:15:00.000Z",
+    updatedAt: "2026-08-27T06:00:00.000Z",
+  },
+  {
+    id: "po_7",
+    poNumber: "BB-PO-2026-007",
+    rfqId: "rfq_5",
+    requisitionId: "req_10",
+    projectId: "proj_heritage_resort",
+    vendorId: "vendor_10",
+    status: "rejected",
+    rejectedAtLevel: 1,
+    termsAndConditions: "Payment: 30 days from delivery, against invoice. Delivery: within 14 days of PO issuance, to site store.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-08-03T06:00:00.000Z",
+    releasedAt: null,
+    issuedAt: null,
+    emailDispatchStatus: "not_sent",
+    emailDispatchedAt: null,
+    createdAt: "2026-08-02T05:15:00.000Z",
+    updatedAt: "2026-08-04T09:00:00.000Z",
+  },
+  {
+    id: "po_8",
+    poNumber: "BB-PO-2026-008",
+    rfqId: "rfq_5",
+    requisitionId: "req_10",
+    projectId: "proj_heritage_resort",
+    vendorId: "vendor_5",
+    status: "issued",
+    rejectedAtLevel: null,
+    termsAndConditions:
+      "Payment: 45 days from delivery, against invoice. Delivery: phased over 3 weeks starting from PO issuance. All goods subject to inspection and GRN on receipt.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-08-03T06:30:00.000Z",
+    releasedAt: "2026-08-07T05:00:00.000Z",
+    issuedAt: "2026-08-07T06:00:00.000Z",
+    emailDispatchStatus: "sent",
+    emailDispatchedAt: "2026-08-07T06:00:00.000Z",
+    createdAt: "2026-08-02T05:30:00.000Z",
+    updatedAt: "2026-08-07T06:00:00.000Z",
+  },
+  // po_9/po_10 — from rfq_6 (Gorakhpur Business Park), added for broader
+  // demo coverage. po_9 is issued (full lifecycle) so it has a GRN behind
+  // it; po_10 is `"released"` — see this file's header comment on why that
+  // state needed real demo data.
+  {
+    id: "po_9",
+    poNumber: "BB-PO-2026-009",
+    rfqId: "rfq_6",
+    requisitionId: "req_12",
+    projectId: "proj_gorakhpur_business_park",
+    vendorId: "vendor_11",
+    status: "issued",
+    rejectedAtLevel: null,
+    termsAndConditions:
+      "Payment: 30 days from delivery, against invoice. Delivery: within 10 days of PO issuance, to site store. All goods subject to inspection and GRN on receipt.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-09-19T06:00:00.000Z",
+    releasedAt: "2026-09-22T05:00:00.000Z",
+    issuedAt: "2026-09-22T06:00:00.000Z",
+    emailDispatchStatus: "sent",
+    emailDispatchedAt: "2026-09-22T06:00:00.000Z",
+    createdAt: "2026-09-19T05:00:00.000Z",
+    updatedAt: "2026-09-22T06:00:00.000Z",
+  },
+  {
+    id: "po_10",
+    poNumber: "BB-PO-2026-010",
+    rfqId: "rfq_6",
+    requisitionId: "req_12",
+    projectId: "proj_gorakhpur_business_park",
+    vendorId: "vendor_2",
+    status: "released",
+    rejectedAtLevel: null,
+    termsAndConditions:
+      "Payment: 45 days from delivery, against invoice. Delivery: within 21 days of PO issuance, to site store.",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    submittedAt: "2026-09-19T06:15:00.000Z",
+    releasedAt: "2026-09-23T05:00:00.000Z",
+    issuedAt: null,
+    emailDispatchStatus: "not_sent",
+    emailDispatchedAt: null,
+    createdAt: "2026-09-19T05:15:00.000Z",
+    updatedAt: "2026-09-23T05:00:00.000Z",
   },
 ];

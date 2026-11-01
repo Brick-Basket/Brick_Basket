@@ -62,6 +62,7 @@ export function PaymentTable({
       key: "amount",
       header: "Amount",
       sortKey: "amount",
+      align: "right",
       render: (p) => formatINR(p.amount),
     },
     {

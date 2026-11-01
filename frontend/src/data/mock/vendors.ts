@@ -146,4 +146,66 @@ export const mockVendors: Vendor[] = [
     createdAt: "2026-06-22T05:00:00.000Z",
     updatedAt: "2026-06-22T05:00:00.000Z",
   },
+  // vendor_9/vendor_10 added alongside the Riverside Apartments/Heritage
+  // Resort mock projects (mock/projects.ts) — local vendors for the new
+  // projects' RFQ/PO chains, and two more rows in their own code series
+  // (300003 sequentially follows vendor_4/vendor_5's 300001/300002;
+  // 200002 follows vendor_3's 200001) to exercise `assignVendorCode`'s
+  // sequencing beyond a series' first entry.
+  {
+    id: "vendor_9",
+    vendorCode: "300003",
+    tradeName: "Deccan Building Materials",
+    gstCategory: "registered",
+    gstin: "27AADCD2345M1Z6",
+    address: "Plot 19, Hinjewadi Industrial Area, Pune, Maharashtra 411057",
+    msmeUdyamNumber: "UDYAM-MH-26-0034567",
+    contactPerson: "Mahesh Kulkarni",
+    contactPersonDesignation: "Director",
+    email: "mahesh@deccanbuildmat.example",
+    contactNumber: "+91 98230 44556",
+    nature: "supply",
+    codeSeriesCategory: "supply",
+    turnover: 48_000_000,
+    createdAt: "2026-08-12T05:00:00.000Z",
+    updatedAt: "2026-08-12T05:00:00.000Z",
+  },
+  {
+    id: "vendor_10",
+    vendorCode: "200002",
+    tradeName: "Rajputana MEP & Electricals",
+    gstCategory: "registered",
+    gstin: "08AAFCR6789N1Z3",
+    address: "C-56, Malviya Industrial Area, Jaipur, Rajasthan 302017",
+    contactPerson: "Devika Shekhawat",
+    contactPersonDesignation: "Proprietor",
+    email: "devika@rajputanamep.example",
+    contactNumber: "+91 94141 22334",
+    nature: "service",
+    codeSeriesCategory: "service",
+    turnover: 14_600_000,
+    createdAt: "2026-07-25T05:00:00.000Z",
+    updatedAt: "2026-07-25T05:00:00.000Z",
+  },
+  // vendor_11 added alongside the Gorakhpur Business Park mock project
+  // (mock/projects.ts) — a local vendor for its RFQ/PO chain, continuing
+  // the supply series sequentially (300004 follows vendor_9's 300003).
+  {
+    id: "vendor_11",
+    vendorCode: "300004",
+    tradeName: "Purvanchal Hardware & Steel Suppliers",
+    gstCategory: "registered",
+    gstin: "09AAKCP5678P1Z7",
+    address: "Industrial Estate, Gida, Gorakhpur, Uttar Pradesh 273209",
+    msmeUdyamNumber: "UDYAM-UP-11-0067890",
+    contactPerson: "Rajeev Pandey",
+    contactPersonDesignation: "Director",
+    email: "rajeev@purvanchalhardware.example",
+    contactNumber: "+91 98391 55667",
+    nature: "supply",
+    codeSeriesCategory: "supply",
+    turnover: 36_000_000,
+    createdAt: "2026-09-08T05:00:00.000Z",
+    updatedAt: "2026-09-08T05:00:00.000Z",
+  },
 ];

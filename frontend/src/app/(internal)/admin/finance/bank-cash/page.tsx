@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { usePermission } from "@/lib/permissions/use-permission";
 import { useBankTransactions } from "@/hooks/use-bank-transactions";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { BankTransactionFilters } from "@/components/bank/bank-transaction-filters";
 import { BankTransactionTable } from "@/components/bank/bank-transaction-table";
 import { BankTransactionForm } from "@/components/bank/bank-transaction-form";
@@ -47,6 +48,22 @@ function AdminBankCashContent() {
   const [editingTransaction, setEditingTransaction] = useState<BankTransaction | null>(null);
   const { status, error, result, refetch } = useBankTransactions(filters);
 
+  // BrickBasket "everything interconnected" connectivity fix: this filter
+  // already had a Project dropdown, but it never followed the shared Global
+  // Project Selector — same follow pattern as `GRNFilters`/Documents.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: BankTransactionListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
+
   const handleSortChange = (key: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -75,7 +92,7 @@ function AdminBankCashContent() {
         </PermissionGuard>
       </div>
 
-      <BankTransactionFilters value={filters} onChange={setFilters} />
+      <BankTransactionFilters value={filters} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

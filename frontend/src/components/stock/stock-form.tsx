@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { useSession } from "@/components/providers/auth-provider";
-import { useCreateStockEntry, useUpdateStockEntry } from "@/hooks/use-stock";
+import { useCreateStockEntry, useStockTrace, useUpdateStockEntry } from "@/hooks/use-stock";
 import { useProjects } from "@/hooks/use-projects";
 import { STOCK_MATERIAL_CONFIG, STOCK_MATERIAL_ORDER } from "@/components/stock/stock-material-config";
 import type { StockEntry } from "@/types/domain/stock-entry";
@@ -68,6 +68,7 @@ export function StockForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<StockFormValues>({
     resolver: zodResolver(stockFormSchema),
@@ -86,6 +87,46 @@ export function StockForm({
   });
 
   const material = watch("material");
+  const projectId = watch("projectId");
+  const date = watch("date");
+  const openingStockInput = watch("openingStock");
+  const receivedTodayInput = watch("receivedToday");
+  const consumedTodayInput = watch("consumedToday");
+
+  // BUG FIX (owner report: "Use these values" against a day with no prior
+  // Opening Stock recorded — e.g. a project this demo's seed data never
+  // gave any earlier Stock Statement rows, like Luxury Villa — silently
+  // produced a negative Closing Stock, which the table then rendered in
+  // `text-warning` with no explanation anywhere of *why* it was flagged).
+  // `StockEntry.closingStock` is always computed as `opening + received -
+  // consumed` (see its own header comment) and this form never validated
+  // that the result makes physical sense — you can't consume material
+  // that was never received or carried over as opening stock. Mirroring
+  // that same computation live here (rather than only after a round trip
+  // to the table) surfaces the problem at the moment it's created, not
+  // after the fact. This is deliberately a **warning, not a hard block**
+  // (unlike GRN's `assertWithinOrdered`, which does reject outright):
+  // Stock Statement is explicitly a manually entered reconciliation
+  // ledger (see the "Traced from..." aid box below), and Stores staff may
+  // legitimately need to record an observed shortfall — e.g. opening
+  // stock itself was never logged for an earlier day — for investigation
+  // rather than being blocked from saving it at all.
+  const computedClosingStock = (() => {
+    const opening = Number(openingStockInput);
+    const received = Number(receivedTodayInput);
+    const consumed = Number(consumedTodayInput);
+    if (Number.isNaN(opening) || Number.isNaN(received) || Number.isNaN(consumed)) return null;
+    return opening + received - consumed;
+  })();
+  const closingStockIsNegative = computedClosingStock !== null && computedClosingStock < 0;
+  // Spec-review correction (docs/OPEN_QUESTIONS.md #32): GRN/Store
+  // Requisition ("MR")/Wastage used to be unconnected to this ledger
+  // entirely. This surfaces what those three modules recorded for the
+  // same project/material/day as a reconciliation aid — it never
+  // auto-fills or auto-submits; the person entering this row decides
+  // whether to use it.
+  const { trace } = useStockTrace(projectId, material, date);
+  const hasTrace = !!trace && (trace.tracedReceivedToday > 0 || trace.tracedIssuedToday > 0 || trace.tracedWastedToday > 0);
 
   const onSubmit = async (values: StockFormValues) => {
     if (!session) return;
@@ -140,8 +181,18 @@ export function StockForm({
       </div>
 
       {material === "other" && (
-        <FormField label="Material Name" htmlFor="stock-other-name" hint="Only shown when Material is set to Other.">
-          <Input id="stock-other-name" {...register("otherMaterialName")} />
+        // UI FIX (broad audit pass): the schema's `.superRefine()` above already
+        // requires this field when Material is "other", but the error/invalid
+        // props were never wired to the `FormField`/`Input` here, so a blank
+        // submit was silently blocked with zero visible feedback (no red text,
+        // no border) — matching sibling `store-requisition-form.tsx`'s wiring.
+        <FormField
+          label="Material Name"
+          htmlFor="stock-other-name"
+          error={errors.otherMaterialName?.message}
+          hint="Only shown when Material is set to Other."
+        >
+          <Input id="stock-other-name" invalid={!!errors.otherMaterialName} {...register("otherMaterialName")} />
         </FormField>
       )}
 
@@ -165,6 +216,47 @@ export function StockForm({
           <Input id="stock-consumed" type="number" step="any" invalid={!!errors.consumedToday} {...register("consumedToday")} />
         </FormField>
       </div>
+
+      {closingStockIsNegative && (
+        <div className="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-warning">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            This would make Closing Stock <span className="font-medium">{computedClosingStock?.toLocaleString("en-IN")}</span> — more was
+            consumed than was ever received or carried over as opening stock. Double-check Opening Stock for this day before saving (it can
+            still be saved as-is, e.g. to record a shortfall for investigation).
+          </span>
+        </div>
+      )}
+
+      {hasTrace && trace && (
+        <div className="flex flex-col gap-2 rounded-card border border-border bg-surface-muted p-3 text-sm">
+          <p className="font-medium text-ink">Traced from other Store Management records for this day</p>
+          <p className="text-ink-muted">
+            GRN receipts: <span className="font-medium text-ink">{trace.tracedReceivedToday.toLocaleString("en-IN")}</span>
+            {trace.tracedReceivedLineCount > 0
+              ? ` (${trace.tracedReceivedLineCount} line${trace.tracedReceivedLineCount === 1 ? "" : "s"})`
+              : ""}
+            {" · "}MR issuance: <span className="font-medium text-ink">{trace.tracedIssuedToday.toLocaleString("en-IN")}</span>
+            {" · "}Wastage: <span className="font-medium text-ink">{trace.tracedWastedToday.toLocaleString("en-IN")}</span>
+          </p>
+          <p className="text-xs text-ink-muted">
+            A reconciliation aid only — this Stock Statement row stays manually entered; nothing here is written in automatically.
+          </p>
+          <div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setValue("receivedToday", trace.tracedReceivedToday);
+                setValue("consumedToday", trace.tracedIssuedToday + trace.tracedWastedToday);
+              }}
+            >
+              Use these values
+            </Button>
+          </div>
+        </div>
+      )}
 
       <FormField label="Supplier (optional)" htmlFor="stock-supplier">
         <Input id="stock-supplier" {...register("supplierName")} />

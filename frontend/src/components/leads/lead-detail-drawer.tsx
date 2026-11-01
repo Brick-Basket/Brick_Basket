@@ -33,14 +33,23 @@ export function LeadDetailDrawer({
   onEdit: (leadId: string) => void;
 }) {
   const { status, error, lead, activities, refetch } = useLead(leadId);
-  const { submit: transition, status: transitionStatus } = useTransitionLead();
+  const { submit: transition, status: transitionStatus, error: transitionError } = useTransitionLead();
   const [pendingStatus, setPendingStatus] = useState<LeadStatus | null>(null);
 
+  // BUG FIX: this used to call setPendingStatus(null) unconditionally,
+  // closing the confirmation dialog even when `transition` failed — a
+  // rejected status change looked identical to a successful one, since the
+  // dialog vanished either way with no error ever shown. Now only closes on
+  // success, matching every other confirm-then-mutate flow in this app
+  // (docs/OPEN_QUESTIONS.md #45), and passes the hook's `error` into
+  // ConfirmationDialog below so a failure stays visible instead.
   const handleConfirmTransition = async () => {
     if (!lead || !pendingStatus) return;
     const updated = await transition(lead.id, pendingStatus);
-    setPendingStatus(null);
-    if (updated) refetch();
+    if (updated) {
+      setPendingStatus(null);
+      refetch();
+    }
   };
 
   return (
@@ -166,6 +175,7 @@ export function LeadDetailDrawer({
         }
         confirmLabel="Change Status"
         loading={transitionStatus === "loading"}
+        error={transitionError}
       />
     </>
   );

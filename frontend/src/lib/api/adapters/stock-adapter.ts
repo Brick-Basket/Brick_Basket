@@ -1,5 +1,8 @@
-import type { CreateStockEntryInput, StockEntry, StockMaterial, UpdateStockEntryInput } from "@/types/domain/stock-entry";
+import type { CreateStockEntryInput, MaterialReceiptSummary, StockEntry, StockMaterial, StockTrace, UpdateStockEntryInput } from "@/types/domain/stock-entry";
 import { mockStockEntries } from "@/data/mock/stock-entries";
+import { grnAdapter } from "@/lib/api/adapters/grn-adapter";
+import { storeRequisitionsAdapter } from "@/lib/api/adapters/store-requisitions-adapter";
+import { wastageAdapter } from "@/lib/api/adapters/wastage-adapter";
 
 /**
  * Adapter boundary for the Stock Statement module (Part 11).
@@ -8,11 +11,21 @@ import { mockStockEntries } from "@/data/mock/stock-entries";
  * `stock-adapter.rest.ts` implementing the same interface and changing
  * the single export at the bottom of this file.
  *
+ * **Cross-adapter dependency, by design (spec-review correction,
+ * docs/OPEN_QUESTIONS.md #32)** — `getTrace` below calls `grnAdapter`,
+ * `storeRequisitionsAdapter`, and `wastageAdapter`'s own public methods
+ * (never their mock arrays directly), the same composition discipline
+ * `CostToCompleteAdapter.getSummary` already established, to answer "what
+ * did GRN/MR/Wastage record for this same material and day" — see
+ * `StockTrace`'s own header comment for why this is a read-only
+ * reconciliation view, never a write into `StockEntry`.
+ *
  * Backend contract — see docs/API_CONTRACTS.md (Part 11) for full detail:
  *   GET    /api/stock-entries          — list, filtered by project/material/date range
  *   GET    /api/stock-entries/:id       — detail
  *   POST   /api/stock-entries          — create (stock:write)
  *   PATCH  /api/stock-entries/:id       — edit (stock:write, project/material immutable)
+ *   GET    /api/stock-entries/trace     — the GRN/MR/Wastage reconciliation view for one project/material/date (see `getTrace`)
  */
 export interface StockActor {
   id: string;
@@ -43,6 +56,10 @@ export interface StockAdapter {
   get(id: string): Promise<StockEntry | null>;
   create(input: CreateStockEntryInput, actor: StockActor): Promise<StockEntry>;
   update(id: string, patch: UpdateStockEntryInput, actor: StockActor): Promise<StockEntry>;
+  /** See `StockTrace`'s own header comment — a read-only reconciliation view across GRN/Store Requisition/Wastage for this one (project, material, date) key, never a write into `StockEntry`. */
+  getTrace(projectId: string, material: StockMaterial, date: string): Promise<StockTrace>;
+  /** See `MaterialReceiptSummary`'s own header comment — a read-only, all-time (not date-scoped) GRN/MR/Wastage reconciliation for this one (project, material) key, backing `StoreRequisitionForm`'s "Received via GRN" panel. */
+  getMaterialReceiptSummary(projectId: string, material: StockMaterial): Promise<MaterialReceiptSummary>;
 }
 
 class MockStockAdapter implements StockAdapter {
@@ -101,6 +118,67 @@ class MockStockAdapter implements StockAdapter {
     const updated: StockEntry = { ...entry, ...patch, updatedAt: new Date().toISOString() };
     this.entries = this.entries.map((e) => (e.id === id ? updated : e));
     return updated;
+  }
+
+  async getTrace(projectId: string, material: StockMaterial, date: string): Promise<StockTrace> {
+    await delay(300);
+    const [grnResult, issuedResult, wastageResult] = await Promise.all([
+      grnAdapter.list({ projectId, pageSize: 200 }),
+      storeRequisitionsAdapter.list({ projectId, status: "issued", pageSize: 200 }),
+      wastageAdapter.list({ projectId, material, pageSize: 200 }),
+    ]);
+
+    let tracedReceivedToday = 0;
+    let tracedReceivedLineCount = 0;
+    const grnsOnDate = grnResult.items.filter((g) => g.receivedAt.slice(0, 10) === date);
+    for (const grn of grnsOnDate) {
+      const lines = await grnAdapter.listLineItems(grn.id);
+      for (const line of lines) {
+        if (line.stockMaterial !== material) continue;
+        tracedReceivedToday += line.receivedQuantity;
+        tracedReceivedLineCount += 1;
+      }
+    }
+
+    const tracedIssuedToday = issuedResult.items
+      .filter((r) => r.material === material && r.issueDate === date)
+      .reduce((sum, r) => sum + (r.approvedIssuedQuantity ?? 0), 0);
+
+    const tracedWastedToday = wastageResult.items
+      .filter((w) => w.recordedAt.slice(0, 10) === date)
+      .reduce((sum, w) => sum + w.quantity, 0);
+
+    return { projectId, material, date, tracedReceivedToday, tracedReceivedLineCount, tracedIssuedToday, tracedWastedToday };
+  }
+
+  async getMaterialReceiptSummary(projectId: string, material: StockMaterial): Promise<MaterialReceiptSummary> {
+    await delay(300);
+    const [grnResult, issuedResult, wastageResult] = await Promise.all([
+      grnAdapter.list({ projectId, pageSize: 200 }),
+      storeRequisitionsAdapter.list({ projectId, status: "issued", pageSize: 200 }),
+      wastageAdapter.list({ projectId, material, pageSize: 200 }),
+    ]);
+
+    let totalReceived = 0;
+    let receivedLineCount = 0;
+    const grnNumbers = new Set<string>();
+    for (const grn of grnResult.items) {
+      const lines = await grnAdapter.listLineItems(grn.id);
+      for (const line of lines) {
+        if (line.stockMaterial !== material) continue;
+        totalReceived += line.receivedQuantity;
+        receivedLineCount += 1;
+        grnNumbers.add(grn.grnNumber);
+      }
+    }
+
+    const totalIssuedViaOtherRequisitions = issuedResult.items
+      .filter((r) => r.material === material)
+      .reduce((sum, r) => sum + (r.approvedIssuedQuantity ?? 0), 0);
+
+    const totalWasted = wastageResult.items.reduce((sum, w) => sum + w.quantity, 0);
+
+    return { projectId, material, totalReceived, receivedLineCount, grnNumbers: [...grnNumbers], totalIssuedViaOtherRequisitions, totalWasted };
   }
 
   private mustFind(id: string): StockEntry {

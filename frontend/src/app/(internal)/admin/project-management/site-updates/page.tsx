@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -12,6 +12,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useSiteUpdates } from "@/hooks/use-site-updates";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { SiteUpdateCard } from "@/components/site-updates/site-update-card";
 import { SiteUpdateUploadForm } from "@/components/site-updates/site-update-upload-form";
 import { SiteUpdateDetailPanel } from "@/components/site-updates/site-update-detail-panel";
@@ -36,10 +37,31 @@ export default function AdminSiteUpdatesPage() {
 
 function AdminSiteUpdatesContent() {
   const { projects: allProjects } = useProjects();
+  const { selected, setSelectedId } = useProjectContext();
   const [projectId, setProjectId] = useState<string>("");
   const [page, setPage] = useState(1);
   const [showUpload, setShowUpload] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
+
+  // BrickBasket "Project Management Navigation and Persistent Project
+  // Selection" correction (extended by "Global Project Selector"): this
+  // page's own project filter follows the shared `ProjectProvider`
+  // selection on every change, not just once on load — mirrors
+  // `AdminDPRContent`. That following stops the moment the user touches
+  // this page's own Select directly (a specific project OR "All
+  // Projects" — both count, see its `onChange` below): from then on
+  // it's independently the user's own choice for the rest of this
+  // visit, same guarantee already documented for "All Projects" (a
+  // real, intentionally-supported cross-site feed). A fresh visit
+  // (this component remounts on navigation) always re-seeds from
+  // whatever is currently shared.
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected && selected.id !== projectId) {
+      setProjectId(selected.id);
+    }
+  }, [selected, projectId]);
 
   const listParams: SiteUpdateListParams = {
     projectId: projectId || undefined,
@@ -70,8 +92,11 @@ function AdminSiteUpdatesContent() {
         <Select
           value={projectId}
           onChange={(e) => {
-            setProjectId(e.target.value);
+            const nextId = e.target.value;
+            userOverrodeProjectRef.current = true;
+            setProjectId(nextId);
             setPage(1);
+            if (nextId) setSelectedId(nextId);
           }}
           aria-label="Filter by project"
         >

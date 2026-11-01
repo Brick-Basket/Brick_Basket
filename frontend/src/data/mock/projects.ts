@@ -8,9 +8,21 @@ import type { Project } from "@/types/domain/project";
  * it, and a contract needs a customer, so these two projects (previously
  * customer-less demo rows) were given one each. See `mock/customers.ts`
  * and `mock/contracts.ts`'s `contract_7`/`contract_8`, and docs/OPEN_QUESTIONS.md.
+ *
+ * `progressPercentage` added in the Customer Module pass — manually-set
+ * demo values only, see `Project.progressPercentage`'s doc comment.
  */
 export const mockProjects: Project[] = [
-  { id: "proj_commercial_complex", name: "Commercial Complex", location: "Jharsuguda, Odisha", customerId: "cust_rohit_malhotra" },
-  { id: "proj_luxury_villa", name: "Luxury Villa", location: "Vadodara, Gujarat", customerId: "u_customer" },
-  { id: "proj_modern_residence", name: "Modern Residence", location: "Lucknow, UP", customerId: "cust_modern_residence" },
+  { id: "proj_commercial_complex", name: "Commercial Complex", location: "Jharsuguda, Odisha", customerId: "cust_rohit_malhotra", progressPercentage: 42 },
+  { id: "proj_luxury_villa", name: "Luxury Villa", location: "Vadodara, Gujarat", customerId: "u_customer", progressPercentage: 68 },
+  { id: "proj_modern_residence", name: "Modern Residence", location: "Lucknow, UP", customerId: "cust_modern_residence", progressPercentage: 15 },
+  // Added for broader demo coverage (not owner-named projects) — gives the
+  // Global Project Selector, and the ACE → Requisition → RFQ → PO → GRN →
+  // Stores chain, three more projects in three more states/cities to
+  // filter real data by. See `mock/customers.ts`'s `cust_priya_deshmukh`/
+  // `cust_devendra_rathore`/`cust_suresh_yadav`, and the matching rows
+  // across every other supply-chain mock file.
+  { id: "proj_riverside_apartments", name: "Riverside Apartments", location: "Pune, Maharashtra", customerId: "cust_priya_deshmukh", progressPercentage: 35 },
+  { id: "proj_heritage_resort", name: "Heritage Resort", location: "Jaipur, Rajasthan", customerId: "cust_devendra_rathore", progressPercentage: 22 },
+  { id: "proj_gorakhpur_business_park", name: "Gorakhpur Business Park", location: "Gorakhpur, Uttar Pradesh", customerId: "cust_suresh_yadav", progressPercentage: 12 },
 ];

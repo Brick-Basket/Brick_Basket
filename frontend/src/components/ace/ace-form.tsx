@@ -13,20 +13,29 @@ import { useSession } from "@/components/providers/auth-provider";
 import { useCreateACEItem, useUpdateACEItem } from "@/hooks/use-ace";
 import { useProjects } from "@/hooks/use-projects";
 import { CONTRACT_CATEGORY_CONFIG, CONTRACT_CATEGORY_ORDER } from "@/components/contracts/contract-category-config";
+import { ACE_UOM_CONFIG, ACE_UOM_ORDER } from "@/components/ace/ace-uom-config";
 import type { ACEItem } from "@/types/domain/ace-item";
 
 const aceFormSchema = z.object({
   projectId: z.string().min(1, "Select a project"),
   category: z.enum(["civil", "electrical", "plumbing_sanitary", "mechanical", "finishing", "labour", "design_consultancy", "other"]),
   itemDescription: z.string().min(2, "Add an item description"),
-  uom: z.string().min(1, "Add a unit"),
+  uom: z.enum(["kg", "sq_ft", "nos", "meter", "mt", "sq_mt", "bag_50kg", "cu_ft", "litre", "nos_1000"]),
   rate: z.coerce.number().nonnegative("Rate can't be negative"),
   notes: z.string().optional(),
 });
 
 type ACEFormValues = z.infer<typeof aceFormSchema>;
 
-/** Create/edit form for the ACE module, embedded in a Dialog. `projectId` is only editable in `"create"` mode — a rate sheet's project association doesn't change afterward. */
+/**
+ * Create/edit form for the ACE module, embedded in a Dialog. `projectId`
+ * is only editable in `"create"` mode — a rate sheet's project
+ * association doesn't change afterward.
+ *
+ * Document 2 correction: UOM is now a predefined dropdown (previously
+ * free text) — see `ACE_UOM_ORDER`/`ACE_UOM_CONFIG` in
+ * `src/components/ace/ace-uom-config.ts`.
+ */
 export function ACEForm({
   mode,
   item,
@@ -53,7 +62,7 @@ export function ACEForm({
       projectId: item?.projectId ?? "",
       category: item?.category ?? "civil",
       itemDescription: item?.itemDescription ?? "",
-      uom: item?.uom ?? "",
+      uom: item?.uom ?? "kg",
       rate: item?.rate ?? 0,
       notes: item?.notes ?? "",
     },
@@ -107,7 +116,13 @@ export function ACEForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="UOM" htmlFor="ace-uom" required error={errors.uom?.message}>
-          <Input id="ace-uom" placeholder="kg, sq.ft, each…" invalid={!!errors.uom} {...register("uom")} />
+          <Select id="ace-uom" invalid={!!errors.uom} {...register("uom")}>
+            {ACE_UOM_ORDER.map((u) => (
+              <option key={u} value={u}>
+                {ACE_UOM_CONFIG[u].label}
+              </option>
+            ))}
+          </Select>
         </FormField>
         <FormField label="Rate (₹)" htmlFor="ace-rate" required error={errors.rate?.message}>
           <Input id="ace-rate" type="number" step="any" invalid={!!errors.rate} {...register("rate")} />

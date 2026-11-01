@@ -3,10 +3,10 @@ import type { StockEntry } from "@/types/domain/stock-entry";
 /**
  * Mock/demo dataset only — never imported outside
  * src/lib/api/adapters/stock-adapter.ts. Covers a spread of the
- * confirmed reference material list across two projects and a few
- * consecutive days, including one `"other"` row (with `otherMaterialName`
- * set) and one row with a zero closing stock to exercise a low/empty
- * state visually.
+ * confirmed reference material list across five projects and a few
+ * consecutive days, including rows with `"other"` set (with
+ * `otherMaterialName`) and one row with a zero closing stock to exercise a
+ * low/empty state visually.
  */
 export const mockStockEntries: StockEntry[] = [
   {
@@ -118,5 +118,95 @@ export const mockStockEntries: StockEntry[] = [
     remarks: "Supplier field kept as-entered by store staff — not every material is bought from its 'expected' vendor category.",
     createdAt: "2026-08-26T11:10:00.000Z",
     updatedAt: "2026-08-26T11:10:00.000Z",
+  },
+  // stock_9–12 — Riverside Apartments/Heritage Resort (added for broader
+  // demo coverage). stock_9/stock_10 trace the same TMT steel delivery and
+  // issuance as GRN BB-GRN-2026-003 and Store Requisition MR-0006 above —
+  // deliberately spelled out as separate manual entries, per this file's
+  // "manually maintained, not auto-written from GRN/MR" design.
+  {
+    id: "stock_9",
+    projectId: "proj_riverside_apartments",
+    material: "tmt_steel",
+    uom: "kg",
+    date: "2026-09-02",
+    openingStock: 0,
+    receivedToday: 2_200,
+    consumedToday: 0,
+    supplierName: "Deccan Building Materials",
+    remarks: "Matches GRN BB-GRN-2026-003 in full.",
+    createdAt: "2026-09-02T12:00:00.000Z",
+    updatedAt: "2026-09-02T12:00:00.000Z",
+  },
+  {
+    id: "stock_10",
+    projectId: "proj_riverside_apartments",
+    material: "tmt_steel",
+    uom: "kg",
+    date: "2026-09-06",
+    openingStock: 2_200,
+    receivedToday: 0,
+    consumedToday: 1_200,
+    remarks: "Issued against Store Requisition MR-0006.",
+    createdAt: "2026-09-06T12:00:00.000Z",
+    updatedAt: "2026-09-06T12:00:00.000Z",
+  },
+  {
+    id: "stock_11",
+    projectId: "proj_heritage_resort",
+    material: "other",
+    otherMaterialName: "Natural Stone Cladding (Dholpur)",
+    uom: "sq.ft",
+    date: "2026-08-14",
+    openingStock: 0,
+    receivedToday: 2_000,
+    consumedToday: 0,
+    supplierName: "Manek Tiles & Sanitaryware",
+    remarks: "First delivery against GRN BB-GRN-2026-004 — partial, 2,000 of 3,200 sq.ft ordered.",
+    createdAt: "2026-08-14T12:00:00.000Z",
+    updatedAt: "2026-08-14T12:00:00.000Z",
+  },
+  {
+    id: "stock_12",
+    projectId: "proj_heritage_resort",
+    material: "electrical_cable",
+    uom: "meter",
+    date: "2026-09-13",
+    openingStock: 400,
+    receivedToday: 0,
+    consumedToday: 0,
+    remarks: "No movement today — Store Requisition MR-0009 still in draft.",
+    createdAt: "2026-09-13T12:00:00.000Z",
+    updatedAt: "2026-09-13T12:00:00.000Z",
+  },
+  // stock_13/14 — Gorakhpur Business Park (added for broader demo
+  // coverage). Trace the same TMT steel delivery and issuance as GRN
+  // BB-GRN-2026-005 and Store Requisition MR-0010 above.
+  {
+    id: "stock_13",
+    projectId: "proj_gorakhpur_business_park",
+    material: "tmt_steel",
+    uom: "kg",
+    date: "2026-09-23",
+    openingStock: 0,
+    receivedToday: 2_800,
+    consumedToday: 0,
+    supplierName: "Purvanchal Hardware & Steel Suppliers",
+    remarks: "Matches GRN BB-GRN-2026-005 in full.",
+    createdAt: "2026-09-23T12:00:00.000Z",
+    updatedAt: "2026-09-23T12:00:00.000Z",
+  },
+  {
+    id: "stock_14",
+    projectId: "proj_gorakhpur_business_park",
+    material: "tmt_steel",
+    uom: "kg",
+    date: "2026-09-25",
+    openingStock: 2_800,
+    receivedToday: 0,
+    consumedToday: 1_500,
+    remarks: "Issued against Store Requisition MR-0010.",
+    createdAt: "2026-09-25T12:00:00.000Z",
+    updatedAt: "2026-09-25T12:00:00.000Z",
   },
 ];

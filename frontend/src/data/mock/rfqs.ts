@@ -56,4 +56,52 @@ export const mockRFQs: RFQ[] = [
     createdAt: "2026-08-17T05:00:00.000Z",
     updatedAt: "2026-08-20T07:00:00.000Z",
   },
+  // rfq_4/rfq_5 — from req_8 (Riverside Apartments) and req_10 (Heritage
+  // Resort), added for broader demo coverage alongside mock/projects.ts'
+  // two new projects. Both finalized, each with two vendor groups, so
+  // Purchase Orders (Part 10) has two more finalized RFQs to draw from.
+  {
+    id: "rfq_4",
+    rfqNumber: "BB-RFQ-2026-004",
+    requisitionId: "req_8",
+    projectId: "proj_riverside_apartments",
+    status: "finalized",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    finalizedAt: "2026-08-25T07:00:00.000Z",
+    createdAt: "2026-08-20T05:00:00.000Z",
+    updatedAt: "2026-08-25T07:00:00.000Z",
+  },
+  {
+    id: "rfq_5",
+    rfqNumber: "BB-RFQ-2026-005",
+    requisitionId: "req_10",
+    projectId: "proj_heritage_resort",
+    status: "finalized",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    finalizedAt: "2026-08-02T07:00:00.000Z",
+    createdAt: "2026-07-30T05:00:00.000Z",
+    updatedAt: "2026-08-02T07:00:00.000Z",
+  },
+  // rfq_6 — from req_12 (Gorakhpur Business Park), added for broader demo
+  // coverage alongside mock/projects.ts' third new project. Finalized,
+  // with two vendor groups, so Purchase Orders has another finalized RFQ
+  // to draw from — this time used to cover the "approved"/"released" PO
+  // states that po_1–8 never exercised (see mock/purchase-orders.ts).
+  {
+    id: "rfq_6",
+    rfqNumber: "BB-RFQ-2026-006",
+    requisitionId: "req_12",
+    projectId: "proj_gorakhpur_business_park",
+    status: "finalized",
+    taxPercent: 18,
+    preparedBy: "u_purchaser",
+    preparedByName: "Vikram Nair",
+    finalizedAt: "2026-09-19T07:00:00.000Z",
+    createdAt: "2026-09-17T05:00:00.000Z",
+    updatedAt: "2026-09-19T07:00:00.000Z",
+  },
 ];

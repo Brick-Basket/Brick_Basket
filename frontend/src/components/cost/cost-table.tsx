@@ -50,18 +50,21 @@ export function CostTable({
       key: "budgetAmount",
       header: "Budget",
       sortKey: "budgetAmount",
+      align: "right",
       render: (e) => formatINR(e.budgetAmount),
     },
     {
       key: "actualAmount",
       header: "Actual",
       sortKey: "actualAmount",
+      align: "right",
       render: (e) => formatINR(e.actualAmount),
     },
     {
       key: "variance",
       header: "Variance",
       hideOnMobile: true,
+      align: "right",
       render: (e) => {
         const variance = getVariance(e.budgetAmount, e.actualAmount);
         return (

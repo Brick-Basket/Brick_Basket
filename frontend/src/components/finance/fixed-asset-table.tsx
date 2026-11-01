@@ -55,6 +55,7 @@ export function FixedAssetTable({
       key: "value",
       header: "Value",
       sortKey: "value",
+      align: "right",
       render: (a) => formatINR(a.value),
     },
     {

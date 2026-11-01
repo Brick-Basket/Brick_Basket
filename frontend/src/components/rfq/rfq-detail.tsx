@@ -15,6 +15,7 @@ import { PermissionGuard } from "@/components/shell/permission-guard";
 import { usePermission } from "@/lib/permissions/use-permission";
 import { useSession } from "@/components/providers/auth-provider";
 import { useRFQ, useSetVendorQuote, useRemoveVendorQuote, useSelectVendor, useFinalizeRFQ, useUpdateRFQ } from "@/hooks/use-rfq";
+import { rfqAdapter } from "@/lib/api/adapters/rfq-adapter";
 import { useVendors } from "@/hooks/use-vendors";
 import { usePurchaseOrders } from "@/hooks/use-purchase-orders";
 import { RFQComparisonTable } from "@/components/rfq/rfq-comparison-table";
@@ -27,7 +28,16 @@ import { ADMIN_ROUTES } from "@/lib/constants/routes";
 import type { RFQVendorQuote } from "@/types/domain/rfq";
 import type { Vendor } from "@/types/domain/vendor";
 
-/** Read + comparison surface for a single RFQ, used by `/admin/supply-chain/rfqs/[id]`. No customer-facing counterpart — the owner requirements don't call for one, same as Requisitions (Part 8). */
+/**
+ * Read + comparison surface for a single RFQ, used by
+ * `/admin/supply-chain/rfqs/[id]`. No customer-facing counterpart — the
+ * owner requirements don't call for one, same as Requisitions (Part 8).
+ *
+ * The "Create PO" action below (one per finalized vendor group) is the
+ * explicit RFQ → Purchase Order hand-off Document 2 asked to confirm
+ * exists — it was already wired here before that correction and needed
+ * no further change.
+ */
 export function RFQDetail({
   rfqId,
   onOpenRequisition,
@@ -105,9 +115,26 @@ export function RFQDetail({
   const activeLineQuotedVendorIds = new Set((activeLine ? quotesByLine[activeLine.id] : [])?.map((q) => q.vendorId) ?? []);
   const availableVendorsForActiveLine = vendors.filter((v) => !activeLineQuotedVendorIds.has(v.id));
 
-  const handleAddQuote = async (values: { vendorId: string; rate: number }) => {
+  // Document 2 correction: `values.file` is the vendor's optional
+  // offer/quotation attachment — passed straight through to the adapter,
+  // see `RFQVendorQuoteForm`/`RFQAdapter.setVendorQuote`.
+  //
+  // docs/OPEN_QUESTIONS.md #87(a): `values.freight`/`loadingCharges`/
+  // `otherCharges` are the optional landed-cost components, bundled into
+  // one `charges` object for `setQuote` — all `undefined` when the
+  // purchaser left them blank, so this call is unchanged for any quote
+  // that doesn't use them.
+  const handleAddQuote = async (values: {
+    vendorId: string;
+    rate: number;
+    file: File | null;
+    freight?: number;
+    loadingCharges?: number;
+    otherCharges?: number;
+  }) => {
     if (!actor || !addingQuoteForLine) return;
-    const result = await setQuote(rfq.id, addingQuoteForLine, values.vendorId, values.rate, actor);
+    const { vendorId, rate, file, ...charges } = values;
+    const result = await setQuote(rfq.id, addingQuoteForLine, vendorId, rate, actor, file, charges);
     if (result) {
       setAddingQuoteForLine(null);
       refetch();
@@ -236,6 +263,7 @@ export function RFQDetail({
           onAddQuoteClick={setAddingQuoteForLine}
           onRemoveQuote={handleRemoveQuote}
           onSelectVendor={handleSelectVendor}
+          getQuotePreviewUrl={(quoteId) => rfqAdapter.getQuotePreviewUrl(quoteId)}
           busy={busy}
         />
       </div>
@@ -335,6 +363,13 @@ export function RFQDetail({
         description="Locks the comparison and its vendor selections — Purchase Orders (Part 10) picks up from here. Quotes and selections can no longer be changed afterward."
         confirmLabel="Finalize"
         loading={finalizeStatus === "loading"}
+        // BUG FIX: `finalizeError` was already tracked and rendered on the
+        // page body (below the "Finalize RFQ" button), but never passed
+        // here — so on a failed finalize, the dialog correctly stayed open
+        // (handleFinalize already gates on the result) but its own error
+        // text rendered behind the open modal's backdrop, invisible to
+        // whoever was looking at the dialog they were still staring at.
+        error={finalizeError}
       />
     </div>
   );

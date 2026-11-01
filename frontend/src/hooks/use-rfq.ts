@@ -118,9 +118,26 @@ export function useUpdateRFQ() {
   return useMutation((id: string, patch: UpdateRFQInput, actor: RFQActor) => rfqAdapter.update(id, patch, actor));
 }
 
+/**
+ * Document 2 correction: `file` is an optional vendor offer/quotation
+ * attachment for this quote.
+ *
+ * docs/OPEN_QUESTIONS.md #87(a): `charges` is the optional trailing
+ * `{ freight?, loadingCharges?, otherCharges? }` bundle — appended after
+ * `file` (never inserted earlier in the list) so every existing 5-arg call
+ * site, in tests and elsewhere, keeps compiling and behaving unchanged.
+ */
 export function useSetVendorQuote() {
-  return useMutation((rfqId: string, lineId: string, vendorId: string, rate: number, actor: RFQActor) =>
-    rfqAdapter.setVendorQuote(rfqId, lineId, vendorId, rate, actor),
+  return useMutation(
+    (
+      rfqId: string,
+      lineId: string,
+      vendorId: string,
+      rate: number,
+      actor: RFQActor,
+      file?: File | null,
+      charges?: { freight?: number; loadingCharges?: number; otherCharges?: number },
+    ) => rfqAdapter.setVendorQuote(rfqId, lineId, vendorId, rate, actor, file, charges),
   );
 }
 

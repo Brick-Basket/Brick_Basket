@@ -11,6 +11,7 @@ import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
 import { ConfirmationDialog } from "@/components/domain/confirmation-dialog";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useSession } from "@/components/providers/auth-provider";
+import { useCustomerId } from "@/hooks/use-customer-id";
 import { useMRC, useIssueMRC, useRespondToMRC, useWithdrawMRC } from "@/hooks/use-mrc";
 import { MRCStatusTimeline } from "@/components/mrc/mrc-status-timeline";
 import { MRCLineItemsTable } from "@/components/mrc/mrc-line-items-table";
@@ -41,6 +42,7 @@ export function MRCDetail({
   onEdit?: () => void;
 }) {
   const { session } = useSession();
+  const customerId = useCustomerId();
   const { status, error, mrc, lineItems, refetch } = useMRC(mrcId);
   const { submit: issue, status: issueStatus, error: issueError } = useIssueMRC();
   const { submit: withdraw, status: withdrawStatus, error: withdrawError } = useWithdrawMRC();
@@ -65,6 +67,17 @@ export function MRCDetail({
 
   if (status === "error" || !mrc) {
     return <ErrorState title="Could not load this MRC" description={error ?? undefined} onRetry={refetch} />;
+  }
+
+  // SECURITY FIX (broad audit pass): same gap, and same fix, as
+  // `ContractDetail` — the list pages already scope every row to the
+  // signed-in customer via `useCustomerId()`, but this single-record detail
+  // route never applied the same check, so a signed-in customer could view
+  // *another* customer's full MRC (line items, make/warranty terms) just by
+  // typing a different id into `/dashboard/mrc/[id]`. Scoped to
+  // `perspective === "customer"` only; the admin surface is unaffected.
+  if (perspective === "customer" && mrc.customerId !== customerId) {
+    return <ErrorState variant="forbidden" title="You don't have access to this certificate" />;
   }
 
   const actor = session ? { id: session.user.id, name: session.user.name } : null;

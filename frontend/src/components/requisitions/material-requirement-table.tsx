@@ -31,6 +31,7 @@ export function MaterialRequirementTable({ lines }: { lines: MaterialRequirement
     {
       key: "quantity",
       header: "Quantity",
+      align: "right",
       render: (l) => l.quantity,
     },
   ];
