@@ -510,7 +510,16 @@ const hi = {
   },
 } as const satisfies Dict;
 
-export const UI_TEXT: Record<Lang, Dict> = { en, hi };
+// `satisfies` (not an `: Record<Lang, Dict>` annotation) deliberately —
+// `en`/`hi` already each carry `as const satisfies Dict`, which keeps every
+// section's real literal key set (e.g. `pageBanner`'s "about" | "services" |
+// ...) instead of widening it to Dict's generic `string` index signature.
+// An explicit `Record<Lang, Dict>` annotation here would throw that away and
+// collapse every `keyof typeof UI_TEXT.en.<section>` lookup elsewhere
+// (PageBanner's `pageKey`, in particular) down to `never` — `satisfies`
+// still checks both objects match the `Record<Lang, Dict>` shape without
+// erasing their literal types the way a type annotation does.
+export const UI_TEXT = { en, hi } satisfies Record<Lang, Dict>;
 
 function lookupPath(dict: Dict, path: string): string | undefined {
   const value = path.split(".").reduce<string | Dict | undefined>((acc, key) => {
