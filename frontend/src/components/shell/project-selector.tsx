@@ -41,6 +41,20 @@ export function ProjectSelector() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // BUG FIX: `containerRef` was created for exactly this (its own comment,
+  // a few lines below, already referred to it as "its parent"), but the
+  // actual close-on-outside-click/Escape wiring was never added — the
+  // dropdown previously stayed open until a click landed on an option, Tab,
+  // or a keydown while focus was already inside the open `<ul>` (handled
+  // separately below). `useClickOutside` also closes on *any* Escape
+  // press document-wide, so it's gated on `open` here to avoid stealing
+  // focus back to this trigger on an Escape meant for something else
+  // entirely (a different open dialog, etc.) while this selector happens
+  // to be closed.
+  useClickOutside(containerRef, () => {
+    if (open) closeAndRefocusTrigger();
+  });
   // BUG FIX (two parts, same underlying complaint: "I can't reach above
   // the selected one"). (1) This effect used to refire — and refocus the
   // already-focused selected option — on any render where `projects`/
