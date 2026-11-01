@@ -81,7 +81,20 @@ function getExpectedQuantityFromMonthlyPlan(activity: ScheduleActivity, asOf: Da
 
     // entry.month === asOfMonthKey — pro-rate within the days this
     // calendar month actually shares with the activity's own window.
+    // `entry.month` is always "YYYY-MM" (see `ScheduleMonthlyPlanEntry`),
+    // so this split always yields exactly 2 numbers in practice — the
+    // undefined check is only here because `noUncheckedIndexedAccess`
+    // otherwise types every element of a `.map(Number)` result as
+    // `number | undefined`, the same guard `formatMonthKey` (schedule-
+    // monthly-plan-math.ts) already uses for this exact "YYYY-MM" shape.
     const [year, monthNum] = entry.month.split("-").map(Number);
+    if (year === undefined || monthNum === undefined) {
+      // Malformed month key — can't pro-rate it, so count it fully rather
+      // than silently dropping it from the total, same fallback already
+      // used below for a degenerate (<= 0 day) window.
+      cumulative += entry.plannedQuantity;
+      break;
+    }
     const calendarMonthStart = new Date(year, monthNum - 1, 1);
     const calendarMonthEnd = new Date(year, monthNum, 0); // day 0 of next month = last day of this one
     const windowStart = calendarMonthStart > start ? calendarMonthStart : start;
