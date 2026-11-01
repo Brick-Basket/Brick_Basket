@@ -4,12 +4,19 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Select } from "@/components/ui/select";
 import { FilterBar } from "@/components/domain/filter-bar";
 import { CONTRACT_STATUS_CONFIG } from "@/components/contracts/contract-status-config";
+import { useProjects } from "@/hooks/use-projects";
 import type { ContractListParams } from "@/lib/api/adapters/contracts-adapter";
 import type { Customer } from "@/types/domain/customer";
 import type { ContractStatus } from "@/types/domain/contract";
 
 const STATUS_ORDER: ContractStatus[] = ["draft", "sent_for_acceptance", "accepted", "declined"];
 
+/**
+ * BrickBasket "everything interconnected" connectivity fix: added the
+ * Project filter every other project-scoped module already has, so this
+ * page can follow the shared Global Project Selector (see
+ * `admin/contracts/page.tsx`).
+ */
 export function ContractFilters({
   value,
   customers,
@@ -19,6 +26,7 @@ export function ContractFilters({
   customers: Customer[];
   onChange: (next: ContractListParams) => void;
 }) {
+  const { projects: allProjects } = useProjects();
   return (
     <FilterBar>
       <SearchInput
@@ -28,6 +36,19 @@ export function ContractFilters({
         className="w-full sm:w-64"
         aria-label="Search contracts"
       />
+      <Select
+        value={value.projectId ?? ""}
+        onChange={(e) => onChange({ ...value, projectId: e.target.value || undefined, page: 1 })}
+        className="w-full sm:w-48"
+        aria-label="Filter by project"
+      >
+        <option value="">All projects</option>
+        {allProjects.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </Select>
       <Select
         value={value.status ?? ""}
         onChange={(e) => onChange({ ...value, status: (e.target.value as ContractStatus) || undefined, page: 1 })}

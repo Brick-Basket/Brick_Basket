@@ -5,6 +5,7 @@ import { ProjectSelector } from "@/components/shell/project-selector";
 import { GlobalSearch } from "@/components/shell/global-search";
 import { NotificationsMenu } from "@/components/shell/notifications-menu";
 import { UserMenu } from "@/components/shell/user-menu";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function Topbar({
   onMenuClick,
@@ -30,6 +31,7 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <GlobalSearch />
         <NotificationsMenu />
         <UserMenu profileHref={profileHref} />

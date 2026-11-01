@@ -68,6 +68,7 @@ export function InvoiceTable({
       key: "invoiceAmount",
       header: "Amount",
       sortKey: "invoiceAmount",
+      align: "right",
       render: (i) => formatINR(i.invoiceAmount),
     },
     {

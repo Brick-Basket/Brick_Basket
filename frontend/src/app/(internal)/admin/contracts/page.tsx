@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useContracts } from "@/hooks/use-contracts";
 import { useCustomers } from "@/hooks/use-customers";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { ContractFilters } from "@/components/contracts/contract-filters";
 import { ContractTable } from "@/components/contracts/contract-table";
 import { ADMIN_ROUTES } from "@/lib/constants/routes";
@@ -48,6 +49,23 @@ function AdminContractsContent() {
   const { status, error, result, refetch } = useContracts(filters);
   const { customers } = useCustomers();
 
+  // BrickBasket "everything interconnected" connectivity fix: follow the
+  // shared Global Project Selector until the user picks a project (or "All
+  // projects") directly in this page's own filter — same pattern as
+  // `GRNFilters`/`admin/documents/page.tsx`.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: ContractListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
+
   const handleSortChange = (key: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -71,7 +89,7 @@ function AdminContractsContent() {
         </PermissionGuard>
       </div>
 
-      <ContractFilters value={filters} customers={customers} onChange={setFilters} />
+      <ContractFilters value={filters} customers={customers} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

@@ -5,6 +5,7 @@ import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { FilterBar } from "@/components/domain/filter-bar";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectContext } from "@/components/providers/project-provider";
 import type { DPRListParams } from "@/lib/api/adapters/dpr-adapter";
 
 /**
@@ -13,9 +14,20 @@ import type { DPRListParams } from "@/lib/api/adapters/dpr-adapter";
  * option), since a Project Manager overseeing several sites wants one
  * combined daily-report list, filterable down to one project and/or a date
  * range. Mirrors `GRNFilters` (Part 12) in shape.
+ *
+ * BrickBasket "Project Management Navigation and Persistent Project
+ * Selection" correction: picking a specific project here (anything other
+ * than "All projects") now also updates the shared `ProjectProvider`
+ * selection, so Schedule and Site Updates pick it up without being asked
+ * again. "All projects" is left alone deliberately — it's a real,
+ * intentionally-supported view, not an absence of selection, so choosing
+ * it does not clear or change whatever project is currently shared. This
+ * page's own initial project (see `AdminDPRContent`) is seeded from that
+ * shared selection the other direction, once, on first load.
  */
 export function DPRFilters({ value, onChange }: { value: DPRListParams; onChange: (next: DPRListParams) => void }) {
   const { projects: allProjects } = useProjects();
+  const { setSelectedId } = useProjectContext();
   return (
     <FilterBar>
       <SearchInput
@@ -27,7 +39,11 @@ export function DPRFilters({ value, onChange }: { value: DPRListParams; onChange
       />
       <Select
         value={value.projectId ?? ""}
-        onChange={(e) => onChange({ ...value, projectId: e.target.value || undefined, page: 1 })}
+        onChange={(e) => {
+          const projectId = e.target.value || undefined;
+          onChange({ ...value, projectId, page: 1 });
+          if (projectId) setSelectedId(projectId);
+        }}
         className="w-full sm:w-56"
         aria-label="Filter by project"
       >

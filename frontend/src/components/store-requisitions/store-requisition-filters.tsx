@@ -4,10 +4,17 @@ import { SearchInput } from "@/components/ui/search-input";
 import { Select } from "@/components/ui/select";
 import { FilterBar } from "@/components/domain/filter-bar";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { STORE_REQUISITION_STATUS_CONFIG, STORE_REQUISITION_STATUS_ORDER } from "@/components/store-requisitions/store-requisition-status-config";
 import type { StoreRequisitionListParams } from "@/lib/api/adapters/store-requisitions-adapter";
 import type { StoreRequisitionStatus } from "@/types/domain/store-requisition";
 
+/**
+ * BrickBasket "Global Project Selector" correction: picking a specific
+ * project here now also updates the shared `ProjectProvider` selection,
+ * the same one-way-on-pick pattern `DPRFilters` uses — "All projects"
+ * stays a real, supported view and does not clear the shared selection.
+ */
 export function StoreRequisitionFilters({
   value,
   onChange,
@@ -16,6 +23,7 @@ export function StoreRequisitionFilters({
   onChange: (next: StoreRequisitionListParams) => void;
 }) {
   const { projects } = useProjects();
+  const { setSelectedId } = useProjectContext();
 
   return (
     <FilterBar>
@@ -41,7 +49,11 @@ export function StoreRequisitionFilters({
       </Select>
       <Select
         value={value.projectId ?? ""}
-        onChange={(e) => onChange({ ...value, projectId: e.target.value || undefined, page: 1 })}
+        onChange={(e) => {
+          const projectId = e.target.value || undefined;
+          onChange({ ...value, projectId, page: 1 });
+          if (projectId) setSelectedId(projectId);
+        }}
         className="w-full sm:w-48"
         aria-label="Filter by project"
       >

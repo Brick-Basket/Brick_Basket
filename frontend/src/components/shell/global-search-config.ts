@@ -30,6 +30,13 @@ import { ADMIN_ROUTES, PORTAL_ROUTES } from "@/lib/constants/routes";
  * discipline used everywhere else in Part 18/19 (the palette just calls
  * seven already-existing `list({ search })` methods and renders their
  * top 5 matches each).
+ *
+ * `entityLabel` for the `requisition` entity below reads "Supply/Service
+ * Requirement" — a Document 2 "flow of channel" UI-label rename matching
+ * `nav-config.ts`'s admin nav item. The internal `key: "requisition"` and
+ * the adapter call itself are unchanged — only the label shown to staff
+ * in a search result changes, same scoped-rename reasoning documented in
+ * `src/app/(internal)/admin/supply-chain/requisitions/page.tsx`.
  */
 export interface GlobalSearchResult {
   id: string;
@@ -69,7 +76,7 @@ const STAFF_ENTITIES: GlobalSearchEntityConfig[] = [
     permission: "requisitions:read",
     async search(query) {
       const { items } = await requisitionsAdapter.list({ search: query, pageSize: RESULT_LIMIT });
-      return items.map((r) => ({ id: r.id, entityLabel: "Requisition", title: r.requisitionNumber, subtitle: r.notes, href: `${ADMIN_ROUTES.requisitions}/${r.id}` }));
+      return items.map((r) => ({ id: r.id, entityLabel: "Supply/Service Requirement", title: r.requisitionNumber, subtitle: r.notes, href: `${ADMIN_ROUTES.requisitions}/${r.id}` }));
     },
   },
   {

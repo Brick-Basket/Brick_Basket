@@ -5,12 +5,23 @@ import { Select } from "@/components/ui/select";
 import { FilterBar } from "@/components/domain/filter-bar";
 import { CONTRACT_CATEGORY_CONFIG, CONTRACT_CATEGORY_ORDER } from "@/components/contracts/contract-category-config";
 import { useProjects } from "@/hooks/use-projects";
+import { useProjectContext } from "@/components/providers/project-provider";
 import type { ACEListParams } from "@/lib/api/adapters/ace-adapter";
 import type { ContractCategory } from "@/types/domain/contract";
 
-/** "Category filters" + "Project association" per the owner requirements. */
+/**
+ * "Category filters" + "Project association" per the owner requirements.
+ *
+ * BrickBasket "Global Project Selector" correction: picking a specific
+ * project here now also updates the shared `ProjectProvider` selection
+ * (read by the admin topbar's global selector and every other connected
+ * module), the same one-way-on-pick pattern `DPRFilters`/`GRNFilters` use
+ * — "All categories"/"All projects" stays a real, supported view and
+ * does not clear or change the shared selection.
+ */
 export function ACEFilters({ value, onChange }: { value: ACEListParams; onChange: (next: ACEListParams) => void }) {
   const { projects: allProjects } = useProjects();
+  const { setSelectedId } = useProjectContext();
   return (
     <FilterBar>
       <SearchInput
@@ -35,7 +46,11 @@ export function ACEFilters({ value, onChange }: { value: ACEListParams; onChange
       </Select>
       <Select
         value={value.projectId ?? ""}
-        onChange={(e) => onChange({ ...value, projectId: e.target.value || undefined, page: 1 })}
+        onChange={(e) => {
+          const projectId = e.target.value || undefined;
+          onChange({ ...value, projectId, page: 1 });
+          if (projectId) setSelectedId(projectId);
+        }}
         className="w-full sm:w-48"
         aria-label="Filter by project"
       >

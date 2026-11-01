@@ -2,9 +2,15 @@ import type { ACEItem } from "@/types/domain/ace-item";
 
 /**
  * Mock/demo dataset only — never imported outside
- * src/lib/api/adapters/ace-adapter.ts. Covers all 3 mock projects and a
+ * src/lib/api/adapters/ace-adapter.ts. Covers all 6 mock projects and a
  * spread of categories, so both the category filter and the Requisition
  * form's project-scoped item picker have real, varied data to show.
+ *
+ * `uom` values updated to the predefined `ACEUnitOfMeasure` codes
+ * (Document 2 correction — see `src/types/domain/ace-item.ts`'s header
+ * comment); every previously free-text value here has a corresponding
+ * code in `ACE_UOM_ORDER` (`src/components/ace/ace-uom-config.ts`), so no
+ * row lost its original unit.
  */
 export const mockACEItems: ACEItem[] = [
   {
@@ -22,7 +28,7 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_luxury_villa",
     category: "civil",
     itemDescription: "OPC 53-grade Cement",
-    uom: "bag (50kg)",
+    uom: "bag_50kg",
     rate: 420,
     createdAt: "2026-05-20T05:00:00.000Z",
     updatedAt: "2026-05-20T05:00:00.000Z",
@@ -52,7 +58,7 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_luxury_villa",
     category: "finishing",
     itemDescription: "Vitrified Floor Tiles, 600x600mm",
-    uom: "sq.ft",
+    uom: "sq_ft",
     rate: 78,
     notes: "Reference brand: Kajaria or equivalent.",
     createdAt: "2026-05-22T05:00:00.000Z",
@@ -73,7 +79,7 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_commercial_complex",
     category: "civil",
     itemDescription: "M-Sand (river-sand alternative)",
-    uom: "cu.ft",
+    uom: "cu_ft",
     rate: 62,
     createdAt: "2026-04-10T05:00:00.000Z",
     updatedAt: "2026-04-10T05:00:00.000Z",
@@ -83,7 +89,7 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_commercial_complex",
     category: "mechanical",
     itemDescription: "HVAC Ducting, GI Sheet 24-gauge",
-    uom: "sq.ft",
+    uom: "sq_ft",
     rate: 340,
     createdAt: "2026-04-12T05:00:00.000Z",
     updatedAt: "2026-04-12T05:00:00.000Z",
@@ -93,7 +99,7 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_commercial_complex",
     category: "electrical",
     itemDescription: "MCB Distribution Board, 12-way",
-    uom: "each",
+    uom: "nos",
     rate: 2_450,
     createdAt: "2026-04-13T05:00:00.000Z",
     updatedAt: "2026-04-13T05:00:00.000Z",
@@ -113,7 +119,7 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_modern_residence",
     category: "plumbing_sanitary",
     itemDescription: "Sanitaryware — Wall-mounted WC Set",
-    uom: "each",
+    uom: "nos",
     rate: 12_500,
     notes: "Reference brand: Hindware or equivalent.",
     createdAt: "2026-03-16T05:00:00.000Z",
@@ -124,9 +130,138 @@ export const mockACEItems: ACEItem[] = [
     projectId: "proj_modern_residence",
     category: "civil",
     itemDescription: "Red Clay Bricks, Class A",
-    uom: "1000 nos",
+    uom: "nos_1000",
     rate: 6_800,
     createdAt: "2026-03-16T05:00:00.000Z",
     updatedAt: "2026-03-16T05:00:00.000Z",
+  },
+  // ace_13–16 — Riverside Apartments (added alongside mock/projects.ts'
+  // `proj_riverside_apartments` for broader demo coverage)
+  {
+    id: "ace_13",
+    projectId: "proj_riverside_apartments",
+    category: "civil",
+    itemDescription: "Ready-Mix Concrete M25",
+    uom: "cu_ft",
+    rate: 195,
+    createdAt: "2026-08-10T05:00:00.000Z",
+    updatedAt: "2026-08-10T05:00:00.000Z",
+  },
+  {
+    id: "ace_14",
+    projectId: "proj_riverside_apartments",
+    category: "civil",
+    itemDescription: "TMT Steel (Fe 500), 10mm",
+    uom: "kg",
+    rate: 67,
+    createdAt: "2026-08-10T05:00:00.000Z",
+    updatedAt: "2026-08-10T05:00:00.000Z",
+  },
+  {
+    id: "ace_15",
+    projectId: "proj_riverside_apartments",
+    category: "electrical",
+    itemDescription: "MCB Distribution Board, 8-way",
+    uom: "nos",
+    rate: 1_950,
+    createdAt: "2026-08-11T05:00:00.000Z",
+    updatedAt: "2026-08-11T05:00:00.000Z",
+  },
+  {
+    id: "ace_16",
+    projectId: "proj_riverside_apartments",
+    category: "finishing",
+    itemDescription: "Vitrified Floor Tiles, 800x800mm",
+    uom: "sq_ft",
+    rate: 92,
+    notes: "Reference brand: Kajaria or equivalent.",
+    createdAt: "2026-08-11T05:00:00.000Z",
+    updatedAt: "2026-08-11T05:00:00.000Z",
+  },
+  // ace_17–20 — Heritage Resort (added alongside mock/projects.ts'
+  // `proj_heritage_resort` for broader demo coverage)
+  {
+    id: "ace_17",
+    projectId: "proj_heritage_resort",
+    category: "civil",
+    itemDescription: "Natural Stone Cladding (Dholpur)",
+    uom: "sq_ft",
+    rate: 145,
+    createdAt: "2026-07-22T05:00:00.000Z",
+    updatedAt: "2026-07-22T05:00:00.000Z",
+  },
+  {
+    id: "ace_18",
+    projectId: "proj_heritage_resort",
+    category: "electrical",
+    itemDescription: "3-Phase MCB Distribution Panel",
+    uom: "nos",
+    rate: 8_500,
+    createdAt: "2026-07-22T05:00:00.000Z",
+    updatedAt: "2026-07-22T05:00:00.000Z",
+  },
+  {
+    id: "ace_19",
+    projectId: "proj_heritage_resort",
+    category: "plumbing_sanitary",
+    itemDescription: "CPVC Pipe, 1.5 inch",
+    uom: "meter",
+    rate: 130,
+    createdAt: "2026-07-23T05:00:00.000Z",
+    updatedAt: "2026-07-23T05:00:00.000Z",
+  },
+  {
+    id: "ace_20",
+    projectId: "proj_heritage_resort",
+    category: "finishing",
+    itemDescription: "Exterior Textured Paint — Heritage Finish",
+    uom: "litre",
+    rate: 410,
+    notes: "Reference brand: Asian Paints Royale or equivalent.",
+    createdAt: "2026-07-23T05:00:00.000Z",
+    updatedAt: "2026-07-23T05:00:00.000Z",
+  },
+  // ace_21–24 — Gorakhpur Business Park (added alongside mock/projects.ts'
+  // `proj_gorakhpur_business_park` for broader demo coverage)
+  {
+    id: "ace_21",
+    projectId: "proj_gorakhpur_business_park",
+    category: "civil",
+    itemDescription: "Ready-Mix Concrete M30",
+    uom: "cu_ft",
+    rate: 210,
+    createdAt: "2026-09-10T05:00:00.000Z",
+    updatedAt: "2026-09-10T05:00:00.000Z",
+  },
+  {
+    id: "ace_22",
+    projectId: "proj_gorakhpur_business_park",
+    category: "civil",
+    itemDescription: "TMT Steel (Fe 500), 16mm",
+    uom: "kg",
+    rate: 70,
+    createdAt: "2026-09-10T05:00:00.000Z",
+    updatedAt: "2026-09-10T05:00:00.000Z",
+  },
+  {
+    id: "ace_23",
+    projectId: "proj_gorakhpur_business_park",
+    category: "finishing",
+    itemDescription: "Aluminium Composite Panel (ACP) Cladding",
+    uom: "sq_mt",
+    rate: 2_850,
+    notes: "Reference brand: Alstone or equivalent, for the tower's curtain wall.",
+    createdAt: "2026-09-11T05:00:00.000Z",
+    updatedAt: "2026-09-11T05:00:00.000Z",
+  },
+  {
+    id: "ace_24",
+    projectId: "proj_gorakhpur_business_park",
+    category: "electrical",
+    itemDescription: "VRF Air Conditioning Outdoor Unit",
+    uom: "nos",
+    rate: 185_000,
+    createdAt: "2026-09-11T05:00:00.000Z",
+    updatedAt: "2026-09-11T05:00:00.000Z",
   },
 ];

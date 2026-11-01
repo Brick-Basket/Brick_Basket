@@ -47,6 +47,7 @@ export function PackageComparisonTable({ selectedSlug }: { selectedSlug?: string
     {
       key: "rate",
       header: t("packageComparisonTable.colRate"),
+      align: "right",
       render: (pkg) => (
         <span className="whitespace-nowrap">
           ₹{pkg.rateMin.toLocaleString("en-IN")}

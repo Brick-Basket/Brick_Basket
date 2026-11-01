@@ -135,11 +135,10 @@ class MockGRNAdapter implements GRNAdapter {
       createdAt: now,
       updatedAt: now,
     };
-    this.grns = [grn, ...this.grns];
-
     const newLineItems: GRNLineItem[] = input.lines.map((line) => {
       const poLine = poLineItems.find((l) => l.id === line.purchaseOrderLineItemId);
       if (!poLine) throw new Error("One of the selected lines no longer belongs to this Purchase Order.");
+      this.assertWithinOrdered(poLine.id, poLine.description, poLine.quantity, line.receivedQuantity);
       return {
         id: `grnli_${Math.random().toString(36).slice(2, 10)}`,
         grnId: grn.id,
@@ -151,8 +150,27 @@ class MockGRNAdapter implements GRNAdapter {
         rate: poLine.rate,
         brand: line.brand,
         warrantyCertificateNumber: line.warrantyCertificateNumber,
+        stockMaterial: line.stockMaterial,
       };
     });
+    // BUG FIX (owner report: the "would bring the total received to..."
+    // over-receipt guard kept firing on what the owner believed was a
+    // fresh GRN attempt). `this.grns` used to be committed *before* this
+    // `.map()` ran its `assertWithinOrdered` check on each line — so a
+    // validation failure on any line (the common case being exactly this
+    // guard tripping) still left a real, line-item-less "ghost" GRN behind
+    // in `this.grns`: a consumed `grnNumber`, and — since the PO detail
+    // page's "Goods Receipt Notes" list is driven purely by
+    // `GRNsAdapter.list({ purchaseOrderId })`, with no check on whether a
+    // GRN actually has any lines — a misleading entry claiming something
+    // had been received when nothing actually had. A second attempt from
+    // that same, now-"already has a GRN" PO is exactly what made the
+    // guard's math look wrong: it wasn't double-counting, there was a
+    // real (if empty) GRN record sitting there from the first, failed
+    // click. `create()` is now properly all-or-nothing — the GRN header is
+    // only committed alongside its line items, once every line has passed
+    // validation, so a thrown error leaves no trace at all.
+    this.grns = [grn, ...this.grns];
     this.lineItems = [...this.lineItems, ...newLineItems];
 
     return grn;
@@ -175,11 +193,15 @@ class MockGRNAdapter implements GRNAdapter {
       const revisedLines: GRNLineItem[] = patch.lines.map((line) => {
         const existing = existingLines.find((l) => l.purchaseOrderLineItemId === line.purchaseOrderLineItemId);
         if (!existing) throw new Error("Can't add a new line to an existing GRN — record a separate GRN instead.");
+        // Exclude this GRN's own prior value for the line (`id` below) so editing
+        // the same GRN's received quantity isn't double-counted against itself.
+        this.assertWithinOrdered(existing.purchaseOrderLineItemId, existing.description, existing.orderedQuantity, line.receivedQuantity, existing.id);
         return {
           ...existing,
           receivedQuantity: line.receivedQuantity,
           brand: line.brand,
           warrantyCertificateNumber: line.warrantyCertificateNumber,
+          stockMaterial: line.stockMaterial,
         };
       });
       this.lineItems = [...remaining, ...revisedLines];
@@ -192,6 +214,30 @@ class MockGRNAdapter implements GRNAdapter {
     const grn = this.grns.find((g) => g.id === id);
     if (!grn) throw new Error("GRN not found.");
     return grn;
+  }
+
+  /**
+   * Over-receipt guard (`docs/OPEN_QUESTIONS.md` #32b, closed by the
+   * BrickBasket business-requirements audit pass — see `docs/CHANGELOG.md`).
+   * GRN deliberately allows more than one GRN against the same PO line
+   * (split deliveries), but nothing previously checked that the received
+   * quantities, summed across every GRN against that line, stayed within
+   * what was actually ordered. This throws before any line is written if
+   * the new/revised `receivedQuantity`, added to every *other* GRN line
+   * already recorded against the same `purchaseOrderLineItemId`, would
+   * exceed the PO line's own `orderedQuantity`. `excludeLineId` lets
+   * `update()` re-check an edited line's own prior value without double
+   * counting it against itself.
+   */
+  private assertWithinOrdered(purchaseOrderLineItemId: string, description: string, orderedQuantity: number, newReceivedQuantity: number, excludeLineId?: string): void {
+    const alreadyReceived = this.lineItems
+      .filter((l) => l.purchaseOrderLineItemId === purchaseOrderLineItemId && l.id !== excludeLineId)
+      .reduce((sum, l) => sum + l.receivedQuantity, 0);
+    const total = alreadyReceived + newReceivedQuantity;
+    if (total > orderedQuantity) {
+      const alreadyText = alreadyReceived > 0 ? ` (${alreadyReceived} already received across other GRNs)` : "";
+      throw new Error(`"${description}": receiving ${newReceivedQuantity} would bring the total received to ${total}, more than the ${orderedQuantity} ordered${alreadyText}.`);
+    }
   }
 }
 

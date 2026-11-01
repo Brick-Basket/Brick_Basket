@@ -27,7 +27,7 @@ import { aceAdapter } from "@/lib/api/adapters/ace-adapter";
  *   GET    /api/rfqs/:id/vendor-quotes              — every quote across this RFQ's lines
  *   POST   /api/rfqs                               — create from an approved requisition (rfq:compare)
  *   PATCH  /api/rfqs/:id                            — edit tax rate (rfq:compare, only while draft)
- *   PUT    /api/rfqs/:id/lines/:lineId/quotes/:vendorId   — add/update a vendor's quote (rfq:compare)
+ *   PUT    /api/rfqs/:id/lines/:lineId/quotes/:vendorId   — add/update a vendor's quote, optionally with an offer/quotation attachment (rfq:compare, multipart upload)
  *   DELETE /api/rfqs/:id/lines/:lineId/quotes/:vendorId   — remove a vendor's quote (rfq:compare)
  *   POST   /api/rfqs/:id/lines/:lineId/select-vendor      — select (or clear) this line's vendor (rfq:compare)
  *   POST   /api/rfqs/:id/finalize                   — lock the comparison in, readiness state (rfq:compare)
@@ -63,10 +63,36 @@ export interface RFQAdapter {
   listVendorQuotes(rfqId: string): Promise<RFQVendorQuote[]>;
   create(input: CreateRFQInput, actor: RFQActor): Promise<RFQ>;
   update(id: string, patch: UpdateRFQInput, actor: RFQActor): Promise<RFQ>;
-  setVendorQuote(rfqId: string, lineId: string, vendorId: string, rate: number, actor: RFQActor): Promise<RFQVendorQuote>;
+  /**
+   * `file` — Document 2 correction: optional vendor offer/quotation
+   * attachment for this quote. Omit or pass `null` for no attachment
+   * (the max-3-per-line rule and every other validation are unchanged).
+   *
+   * `charges` — docs/OPEN_QUESTIONS.md #87(a): optional landed-cost
+   * components, appended strictly after `file` so every pre-existing
+   * caller (including `rfq-adapter.test.ts`'s 5-arg calls) is unaffected.
+   */
+  setVendorQuote(
+    rfqId: string,
+    lineId: string,
+    vendorId: string,
+    rate: number,
+    actor: RFQActor,
+    file?: File | null,
+    charges?: { freight?: number; loadingCharges?: number; otherCharges?: number },
+  ): Promise<RFQVendorQuote>;
   removeVendorQuote(rfqId: string, lineId: string, vendorId: string, actor: RFQActor): Promise<void>;
   selectVendor(rfqId: string, lineId: string, vendorId: string | null, actor: RFQActor): Promise<RFQLine>;
   finalize(rfqId: string, actor: RFQActor): Promise<RFQ>;
+  /**
+   * Mock-only convenience: a synchronous, in-memory object URL for a
+   * vendor's offer/quotation attached during this session (via the
+   * browser File API), or `null` for every seeded demo record and after
+   * a page reload — there are no real file bytes behind those. Never
+   * part of the real backend contract, same convention as
+   * `SiteUpdatesAdapter.getPreviewUrl`/`VendorsAdapter.getDocumentPreviewUrl`.
+   */
+  getQuotePreviewUrl(quoteId: string): string | null;
 }
 
 const MAX_VENDOR_QUOTES_PER_LINE = 3;
@@ -75,6 +101,7 @@ class MockRFQAdapter implements RFQAdapter {
   private rfqs: RFQ[] = [...mockRFQs];
   private lines: RFQLine[] = [...mockRFQLines];
   private quotes: RFQVendorQuote[] = [...mockRFQVendorQuotes];
+  private attachmentObjectUrls = new Map<string, string>();
 
   async list(params: RFQListParams = {}): Promise<RFQListResult> {
     await delay(300);
@@ -188,7 +215,26 @@ class MockRFQAdapter implements RFQAdapter {
     return updated;
   }
 
-  async setVendorQuote(rfqId: string, lineId: string, vendorId: string, rate: number, _actor: RFQActor): Promise<RFQVendorQuote> {
+  /**
+   * docs/OPEN_QUESTIONS.md #87(a): `charges` is a new optional trailing
+   * parameter — `{ freight?, loadingCharges?, otherCharges? }` — appended
+   * strictly after the existing `file` parameter, never inserted earlier
+   * in the list. `rfq-adapter.test.ts` calls this with exactly the
+   * original 5 positional args (no `file`, no `charges`) on several
+   * cases; those calls are unaffected, since both new parameters default
+   * to `undefined` and every field they set on the stored quote already
+   * defaults to `undefined`/`0` via `??` at every read site
+   * (`computeLandedCost`). This is a strictly additive change.
+   */
+  async setVendorQuote(
+    rfqId: string,
+    lineId: string,
+    vendorId: string,
+    rate: number,
+    _actor: RFQActor,
+    file?: File | null,
+    charges?: { freight?: number; loadingCharges?: number; otherCharges?: number },
+  ): Promise<RFQVendorQuote> {
     await delay(350);
     const rfq = this.mustFind(rfqId);
     if (rfq.status !== "draft") {
@@ -203,9 +249,19 @@ class MockRFQAdapter implements RFQAdapter {
     }
 
     const now = new Date().toISOString();
+    const attachmentFields = file
+      ? { attachmentFileName: file.name, attachmentFileType: file.type || "application/octet-stream", attachmentFileSizeBytes: file.size }
+      : {};
+    const chargeFields = {
+      freight: charges?.freight,
+      loadingCharges: charges?.loadingCharges,
+      otherCharges: charges?.otherCharges,
+    };
+
     if (existing) {
-      const updated: RFQVendorQuote = { ...existing, rate, quotedAt: now };
+      const updated: RFQVendorQuote = { ...existing, rate, quotedAt: now, ...attachmentFields, ...chargeFields };
       this.quotes = this.quotes.map((q) => (q.id === existing.id ? updated : q));
+      if (file) this.attachmentObjectUrls.set(updated.id, URL.createObjectURL(file));
       return updated;
     }
     const created: RFQVendorQuote = {
@@ -214,8 +270,11 @@ class MockRFQAdapter implements RFQAdapter {
       vendorId,
       rate,
       quotedAt: now,
+      ...attachmentFields,
+      ...chargeFields,
     };
     this.quotes = [...this.quotes, created];
+    if (file) this.attachmentObjectUrls.set(created.id, URL.createObjectURL(file));
     return created;
   }
 
@@ -263,6 +322,10 @@ class MockRFQAdapter implements RFQAdapter {
     const updated: RFQ = { ...rfq, status: "finalized", finalizedAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
     this.replace(updated);
     return updated;
+  }
+
+  getQuotePreviewUrl(quoteId: string): string | null {
+    return this.attachmentObjectUrls.get(quoteId) ?? null;
   }
 
   private mustFind(id: string): RFQ {

@@ -13,6 +13,17 @@ import type { MRC, MRCLineItem } from "@/types/domain/mrc";
  * from Part 11's `grn_1`/`grn_2` (against `proj_modern_residence`, which
  * has no `customerId` of its own — see mrc.ts's header comment on why
  * `customerId` is independent of the project's).
+ *
+ * `mrc_5` (Gorakhpur Business Park) was added alongside a fix to the
+ * create form's "From Received Goods (GRN)" picker (`mrc-line-items-
+ * editor.tsx`/`use-mrc.ts`), which previously listed every GRN line in
+ * the system regardless of which project the MRC was for — so a line
+ * from one project's GRN could end up certified on an MRC for a
+ * completely different project with no warning. The picker now scopes
+ * to the MRC's selected project; `mrc_5`'s one line (`mrcli_8`) is a
+ * correctly-scoped example: `grnli_6` really was received against
+ * `proj_gorakhpur_business_park` (see `grn_5`), matching this MRC's own
+ * `projectId`.
  */
 export const mockMRCs: MRC[] = [
   {
@@ -66,6 +77,19 @@ export const mockMRCs: MRC[] = [
     declineReason: null,
     createdAt: "2026-08-23T07:00:00.000Z",
     updatedAt: "2026-08-23T07:00:00.000Z",
+  },
+  {
+    id: "mrc_5",
+    mrcNumber: "BB-MRC-2026-005",
+    customerId: "cust_suresh_yadav",
+    projectId: "proj_gorakhpur_business_park",
+    status: "draft",
+    notes: "Draft — certifying the TMT steel receipt for the office tower core.",
+    issuedAt: null,
+    respondedAt: null,
+    declineReason: null,
+    createdAt: "2026-09-26T07:00:00.000Z",
+    updatedAt: "2026-09-26T07:00:00.000Z",
   },
 ];
 
@@ -145,6 +169,19 @@ export const mockMRCLineItems: MRCLineItem[] = [
     uom: "each",
     quantity: 2,
     make: "Grohe",
+    warrantyTerms: undefined,
+  },
+  // mrc_5 — GRN-sourced line certifying grn_5's receipt, correctly scoped
+  // to the same project (see this file's header comment on the picker fix).
+  {
+    id: "mrcli_8",
+    mrcId: "mrc_5",
+    source: "grn",
+    grnLineItemId: "grnli_6",
+    description: "TMT Steel (Fe 500), 16mm",
+    uom: "kg",
+    quantity: 2_800,
+    make: "Tata Tiscon",
     warrantyTerms: undefined,
   },
 ];

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { stockAdapter, type StockActor, type StockListParams, type StockListResult } from "@/lib/api/adapters/stock-adapter";
-import type { CreateStockEntryInput, UpdateStockEntryInput } from "@/types/domain/stock-entry";
+import type { CreateStockEntryInput, MaterialReceiptSummary, StockMaterial, StockTrace, UpdateStockEntryInput } from "@/types/domain/stock-entry";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -39,6 +39,84 @@ export function useStockEntries(params: StockListParams) {
   const refetch = useCallback(() => setReloadToken((t) => t + 1), []);
 
   return { status, error, result, refetch };
+}
+
+/**
+ * Cross-module reconciliation trace for one (project, material, date) key
+ * — what GRN/Store Requisition ("MR")/Wastage recorded for that same day,
+ * so `StockForm` can show it alongside the manually entered Received/
+ * Consumed fields instead of leaving those three modules as unconnected
+ * silos (see `StockAdapter.getTrace` and docs/OPEN_QUESTIONS.md #32).
+ * Stays idle (`trace: null`) until `projectId`/`material`/`date` are all set.
+ */
+export function useStockTrace(projectId: string, material: StockMaterial, date: string) {
+  const [status, setStatus] = useState<Status>("idle");
+  const [trace, setTrace] = useState<StockTrace | null>(null);
+
+  useEffect(() => {
+    if (!projectId || !material || !date) {
+      setTrace(null);
+      setStatus("idle");
+      return;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    stockAdapter
+      .getTrace(projectId, material, date)
+      .then((res) => {
+        if (cancelled) return;
+        setTrace(res);
+        setStatus("success");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, material, date]);
+
+  return { status, trace };
+}
+
+/**
+ * All-time GRN receipt visibility for one (project, material) key — backs
+ * `StoreRequisitionForm`'s "Received via GRN" panel, so a Material
+ * Requisition can be raised with the actual receipt history in view
+ * instead of the two modules being unconnected (see
+ * `StockAdapter.getMaterialReceiptSummary`). Stays idle (`summary: null`)
+ * until `projectId`/`material` are both set.
+ */
+export function useMaterialReceiptSummary(projectId: string, material: StockMaterial) {
+  const [status, setStatus] = useState<Status>("idle");
+  const [summary, setSummary] = useState<MaterialReceiptSummary | null>(null);
+
+  useEffect(() => {
+    if (!projectId || !material) {
+      setSummary(null);
+      setStatus("idle");
+      return;
+    }
+    let cancelled = false;
+    setStatus("loading");
+    stockAdapter
+      .getMaterialReceiptSummary(projectId, material)
+      .then((res) => {
+        if (cancelled) return;
+        setSummary(res);
+        setStatus("success");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId, material]);
+
+  return { status, summary };
 }
 
 function useMutation<Args extends unknown[], Result>(fn: (...args: Args) => Promise<Result>) {

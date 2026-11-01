@@ -1,5 +1,18 @@
 "use client";
 
+// BUG FIX (owner report: clicking "New MRC" crashed the whole page into the
+// admin app's generic "This section couldn't be loaded" error boundary).
+// `useEffect` was imported from "react-hook-form" below, which has no
+// export by that name (it only exports its OWN hooks — `useFieldArray`,
+// `useWatch`, etc. — never React's primitives). The import silently
+// resolved to `undefined`, so the `useEffect(...)` call further down (the
+// one that clears an out-of-scope GRN-sourced line when the project
+// changes) threw `TypeError: ... useEffect is not a function` the instant
+// this component rendered — which is on every visit to "New MRC" or an
+// existing MRC's edit view, since `MRCLineItemsEditor` is unconditionally
+// part of `MRCForm`. Fixed by importing `useEffect` from "react" instead,
+// where it actually lives, same as every other component in this codebase.
+import { useEffect } from "react";
 import { useFieldArray, useWatch, type Control, type FieldErrors, type UseFormRegister, type UseFormSetValue } from "react-hook-form";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,22 +37,53 @@ import type { MRCFormValues } from "@/components/mrc/mrc-form-schema";
  * Each row is its own subcomponent (`MRCLineItemRow`) so its `useWatch`
  * calls stay outside the `.map()` loop, same reasoning as
  * `ContractLineItemsEditor`'s `LineItemAmount`.
+ *
+ * `projectId` (the form's currently selected project, or `undefined` for
+ * "No project yet") scopes the "From Received Goods (GRN)" picker to that
+ * project — see `useGRNLinesForPicker`'s header comment for why. If the
+ * project is changed after a GRN-sourced line was already picked from a
+ * now out-of-scope project, that row's selection is cleared below so a
+ * stale cross-project certification can't silently go through.
  */
 export function MRCLineItemsEditor({
   control,
   register,
   setValue,
   errors,
+  projectId,
 }: {
   control: Control<MRCFormValues>;
   register: UseFormRegister<MRCFormValues>;
   setValue: UseFormSetValue<MRCFormValues>;
   errors: FieldErrors<MRCFormValues>;
+  projectId?: string;
 }) {
   const { fields, append, remove } = useFieldArray({ control, name: "lines" });
-  const { status: pickerStatus, options } = useGRNLinesForPicker();
+  const { status: pickerStatus, options } = useGRNLinesForPicker(projectId);
   const allLines = useWatch({ control, name: "lines" });
   const selectedGrnLineIds = (allLines ?? []).map((l) => l.grnLineItemId).filter((id): id is string => !!id);
+
+  // Scoping the picker to `projectId` can leave an already-selected
+  // GRN-sourced row pointing at a line that's no longer in `options` (the
+  // project changed after the line was picked). Clear it rather than
+  // silently submitting a cross-project certification.
+  useEffect(() => {
+    if (pickerStatus !== "success") return;
+    (allLines ?? []).forEach((line, index) => {
+      if (line.source !== "grn" || !line.grnLineItemId) return;
+      const stillValid = options.some((o) => o.line.id === line.grnLineItemId);
+      if (!stillValid) {
+        setValue(`lines.${index}.grnLineItemId`, undefined);
+        setValue(`lines.${index}.description`, "");
+        setValue(`lines.${index}.uom`, "");
+        setValue(`lines.${index}.make`, "");
+        setValue(`lines.${index}.warrantyTerms`, "");
+      }
+    });
+    // Only re-run when the available options change (i.e. projectId
+    // changed) — not on every keystroke in other fields of `allLines`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, pickerStatus]);
 
   return (
     <div className="flex flex-col gap-3">
@@ -74,6 +118,7 @@ export function MRCLineItemsEditor({
             options={options}
             pickerStatus={pickerStatus}
             selectedGrnLineIds={selectedGrnLineIds}
+            hasProjectScope={!!projectId}
             onRemove={() => remove(index)}
             removeDisabled={fields.length === 1}
           />
@@ -92,6 +137,7 @@ function MRCLineItemRow({
   options,
   pickerStatus,
   selectedGrnLineIds,
+  hasProjectScope,
   onRemove,
   removeDisabled,
 }: {
@@ -103,6 +149,7 @@ function MRCLineItemRow({
   options: GRNLinePickerOption[];
   pickerStatus: "idle" | "loading" | "success" | "error";
   selectedGrnLineIds: string[];
+  hasProjectScope: boolean;
   onRemove: () => void;
   removeDisabled: boolean;
 }) {
@@ -132,9 +179,16 @@ function MRCLineItemRow({
     setValue(`lines.${index}.uom`, option?.line.uom ?? "");
     setValue(`lines.${index}.make`, option?.line.brand ?? "—");
     if (option) setValue(`lines.${index}.quantity`, option.line.receivedQuantity);
-    if (option?.line.warrantyCertificateNumber) {
-      setValue(`lines.${index}.warrantyTerms`, `Certificate ${option.line.warrantyCertificateNumber}`);
-    }
+    // BUG FIX: this previously only ever *set* warrantyTerms when the
+    // newly-picked line had a warrantyCertificateNumber, never clearing it
+    // otherwise — every other snapshotted field above is unconditionally
+    // reset on each selection change, but this one wasn't. Switching from
+    // a line that had a certificate (e.g. the WC Set) to one that doesn't
+    // (e.g. a paint line) left the OLD certificate number sitting in the
+    // Warranty Terms box, now describing the wrong material. Always set
+    // it — to the new line's certificate, or to "" when it has none —
+    // exactly like description/uom/make above.
+    setValue(`lines.${index}.warrantyTerms`, option?.line.warrantyCertificateNumber ? `Certificate ${option.line.warrantyCertificateNumber}` : "");
   };
 
   return (
@@ -180,6 +234,13 @@ function MRCLineItemRow({
             {selectedOption && (
               <p className="mt-1.5 text-xs text-ink-muted">
                 Make: {selectedOption.line.brand ?? "—"} · UOM: {selectedOption.line.uom}
+              </p>
+            )}
+            {!selectedOption && pickerStatus === "success" && options.length === 0 && (
+              <p className="mt-1.5 text-xs text-ink-muted">
+                {hasProjectScope
+                  ? "No received goods (GRN) on file yet for this MRC's project."
+                  : "No received goods (GRN) on file yet."}
               </p>
             )}
           </div>

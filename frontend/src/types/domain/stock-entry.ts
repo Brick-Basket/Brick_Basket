@@ -61,3 +61,64 @@ export interface StockEntry {
 export type CreateStockEntryInput = Omit<StockEntry, "id" | "createdAt" | "updatedAt">;
 
 export type UpdateStockEntryInput = Partial<Omit<CreateStockEntryInput, "projectId" | "material">>;
+
+/**
+ * **Spec-review correction (docs/OPEN_QUESTIONS.md #32)** — a read-only
+ * cross-module reconciliation view for one (project, material, date) key.
+ * GRN, Store Requisition ("MR"), and Wastage can each independently move
+ * this same material on this same day, but this file's own header
+ * comment already explains, for good reason, why `StockEntry.receivedToday`/
+ * `consumedToday` stay a manually entered figure rather than something
+ * auto-written by another module — the same principle
+ * `StoreRequisitionsAdapter.issue`'s doc comment states explicitly ("The
+ * frontend must never become the authority for stock truth"). `StockTrace`
+ * resolves the "4 independent silos" gap a different way: it surfaces
+ * what GRN/MR/Wastage recorded for the same key side by side with the
+ * manual entry, so whoever is filling in today's Stock Statement row can
+ * see it and choose to match it — a reconciliation aid, never an
+ * auto-override. See `StockAdapter.getTrace`.
+ */
+export interface StockTrace {
+  projectId: string;
+  material: StockMaterial;
+  date: string;
+  /** Σ `GRNLineItem.receivedQuantity` tagged `stockMaterial === material`, across every GRN received on this date, for this project. */
+  tracedReceivedToday: number;
+  /** How many GRN line items contributed to `tracedReceivedToday` — for an "from N GRN receipt(s)" caption. */
+  tracedReceivedLineCount: number;
+  /** Σ `StoreRequisition.approvedIssuedQuantity` for requisitions with `status === "issued"` and this `issueDate`, this material/project. */
+  tracedIssuedToday: number;
+  /** Σ `WastageEntry.quantity` recorded on this date, this material/project. */
+  tracedWastedToday: number;
+}
+
+/**
+ * Cumulative (all-time, not date-scoped) GRN→MR visibility for one
+ * (project, material) key. Added so `StoreRequisitionForm` can show what
+ * has actually arrived via GRN for this project/material before someone
+ * raises a request against it — closing the specific gap of a freshly
+ * recorded GRN being invisible on the Material Requisitions screen, per
+ * the owner's "flow of channel" step 11 ("site can create material
+ * requisition from the updated stock after GRN"). Same reconciliation-aid
+ * principle as `StockTrace` above — this is a read-only cross-module view,
+ * never a write, and never the authority for real stock (see
+ * `StoreRequisitionsAdapter.issue`'s own doc comment, which this respects
+ * unchanged). Unlike `StockTrace`, which is scoped to one day to match the
+ * Stock Statement's daily ledger, this sums across every date, since a
+ * Material Requisition isn't tied to a single day the way a Stock
+ * Statement row is.
+ */
+export interface MaterialReceiptSummary {
+  projectId: string;
+  material: StockMaterial;
+  /** Σ `GRNLineItem.receivedQuantity` tagged `stockMaterial === material`, across every GRN ever recorded for this project. */
+  totalReceived: number;
+  /** How many GRN line items contributed — for a "from N GRN receipt(s)" caption. */
+  receivedLineCount: number;
+  /** Distinct `GRN.grnNumber`s that contributed, for a reference list (e.g. "via BB-GRN-2026-003"). */
+  grnNumbers: string[];
+  /** Σ `StoreRequisition.approvedIssuedQuantity` for every already-`issued` requisition against this material/project, any date — i.e. what other MRs have already taken. */
+  totalIssuedViaOtherRequisitions: number;
+  /** Σ `WastageEntry.quantity` recorded against this material/project, any date. */
+  totalWasted: number;
+}

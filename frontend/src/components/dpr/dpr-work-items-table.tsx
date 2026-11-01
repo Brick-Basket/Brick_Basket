@@ -29,11 +29,11 @@ export function DPRWorkItemsTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-card border border-border">
+    <div className="max-h-[70vh] overflow-auto rounded-card border border-border">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-border bg-surface-muted">
+        <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted">
           <tr>
-            <th className="whitespace-nowrap px-4 py-3 font-medium text-ink-muted">Sl. No.</th>
+            <th className="whitespace-nowrap px-4 py-3 text-right font-medium text-ink-muted">Sl. No.</th>
             <th className="px-4 py-3 font-medium text-ink-muted">Work Item</th>
             <th className="px-4 py-3 font-medium text-ink-muted">Location</th>
             <th className="whitespace-nowrap px-4 py-3 font-medium text-ink-muted">Unit</th>
@@ -54,8 +54,8 @@ export function DPRWorkItemsTable({
             const description = master?.isOtherCatchAll ? line.otherDescription || master.description : master?.description ?? "—";
 
             return (
-              <tr key={line.id} className="border-b border-border last:border-0">
-                <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{master?.slNo ?? "—"}</td>
+              <tr key={line.id} className="border-b border-border last:border-0 even:bg-surface-muted/40">
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink-muted">{master?.slNo ?? "—"}</td>
                 <td className="px-4 py-3 text-ink">
                   {description}
                   {line.scheduleActivityId && (
@@ -67,11 +67,11 @@ export function DPRWorkItemsTable({
                 </td>
                 <td className="px-4 py-3 text-ink-muted">{line.location || "—"}</td>
                 <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{getLineUom(master, line.otherUom)}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{line.plannedQty.toLocaleString("en-IN")}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-right text-ink-muted">{previousQty.toLocaleString("en-IN")}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{line.todayQty.toLocaleString("en-IN")}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{cumulativeQty.toLocaleString("en-IN")}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{percentComplete.toFixed(0)}%</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink">{line.plannedQty.toLocaleString("en-IN")}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink-muted">{previousQty.toLocaleString("en-IN")}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink">{line.todayQty.toLocaleString("en-IN")}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink">{cumulativeQty.toLocaleString("en-IN")}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink">{percentComplete.toFixed(0)}%</td>
                 <td className="px-4 py-3 text-ink-muted">{line.remarks || "—"}</td>
               </tr>
             );

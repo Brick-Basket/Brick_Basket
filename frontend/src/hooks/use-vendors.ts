@@ -9,11 +9,13 @@ import {
 } from "@/lib/api/adapters/vendors-adapter";
 import type {
   CreateVendorAssessmentInput,
+  CreateVendorDocumentInput,
   CreateVendorInput,
   CreateVendorPastWorkInput,
   UpdateVendorInput,
   Vendor,
   VendorAssessment,
+  VendorDocument,
   VendorPastWorkEntry,
 } from "@/types/domain/vendor";
 
@@ -54,13 +56,14 @@ export function useVendors(params: VendorListParams) {
   return { status, error, result, refetch };
 }
 
-/** Single-vendor detail + its assessment and past-work history, for the detail page. */
+/** Single-vendor detail + its assessment, past-work, and document history, for the detail page. */
 export function useVendor(id: string | null) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [assessments, setAssessments] = useState<VendorAssessment[]>([]);
   const [pastWork, setPastWork] = useState<VendorPastWorkEntry[]>([]);
+  const [documents, setDocuments] = useState<VendorDocument[]>([]);
   const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
@@ -68,18 +71,25 @@ export function useVendor(id: string | null) {
       setVendor(null);
       setAssessments([]);
       setPastWork([]);
+      setDocuments([]);
       setStatus("idle");
       return;
     }
     let cancelled = false;
     setStatus("loading");
     setError(null);
-    Promise.all([vendorsAdapter.get(id), vendorsAdapter.listAssessments(id), vendorsAdapter.listPastWork(id)])
-      .then(([foundVendor, foundAssessments, foundPastWork]) => {
+    Promise.all([
+      vendorsAdapter.get(id),
+      vendorsAdapter.listAssessments(id),
+      vendorsAdapter.listPastWork(id),
+      vendorsAdapter.listDocuments(id),
+    ])
+      .then(([foundVendor, foundAssessments, foundPastWork, foundDocuments]) => {
         if (cancelled) return;
         setVendor(foundVendor);
         setAssessments(foundAssessments);
         setPastWork(foundPastWork);
+        setDocuments(foundDocuments);
         setStatus("success");
       })
       .catch((e) => {
@@ -94,7 +104,7 @@ export function useVendor(id: string | null) {
 
   const refetch = useCallback(() => setReloadToken((t) => t + 1), []);
 
-  return { status, error, vendor, assessments, pastWork, refetch };
+  return { status, error, vendor, assessments, pastWork, documents, refetch };
 }
 
 function useMutation<Args extends unknown[], Result>(fn: (...args: Args) => Promise<Result>) {
@@ -140,5 +150,12 @@ export function useAddVendorAssessment() {
 export function useAddVendorPastWork() {
   return useMutation((vendorId: string, input: CreateVendorPastWorkInput, actor: VendorActor) =>
     vendorsAdapter.addPastWork(vendorId, input, actor),
+  );
+}
+
+/** Document 2 correction — attach a vendor document (PAN card, GSTIN certificate, MSME/UDYAM certificate, or other). */
+export function useAddVendorDocument() {
+  return useMutation((vendorId: string, input: CreateVendorDocumentInput, file: File | null, actor: VendorActor) =>
+    vendorsAdapter.addDocument(vendorId, input, file, actor),
   );
 }

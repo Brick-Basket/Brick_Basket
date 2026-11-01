@@ -2,7 +2,7 @@ import type { StoreRequisition } from "@/types/domain/store-requisition";
 
 /**
  * Mock/demo only — covers every status (draft/submitted/approved/rejected/
- * issued) across 2 projects and 2 requester roles (`project_manager`,
+ * issued) across 5 projects and 2 requester roles (`project_manager`,
  * `site_engineer`), so every filter/action combination has something real
  * to show. See `src/types/domain/store-requisition.ts`'s header comment.
  *
@@ -98,5 +98,114 @@ export const mockStoreRequisitions: StoreRequisition[] = [
     remarks: "Second floor brickwork — draft, not yet sent to Stores.",
     createdAt: "2026-09-10T16:00:00.000Z",
     updatedAt: "2026-09-10T16:00:00.000Z",
+  },
+  // storereq_6–9 — Riverside Apartments/Heritage Resort (added for broader
+  // demo coverage). storereq_6/storereq_8 are both `issued`, deliberately
+  // drawing against the `tmt_steel`/stone-cladding GRN receipts above, so
+  // the Material Requisitions form's GRN-receipt-summary panel
+  // (`useMaterialReceiptSummary`) has real received-vs-issued data to show
+  // for these two projects too, not only Luxury Villa.
+  {
+    id: "storereq_6",
+    projectId: "proj_riverside_apartments",
+    requisitionNumber: "MR-0006",
+    requestedBy: "u_engineer",
+    requestedByName: "Sana Iqbal",
+    requestDate: "2026-09-05",
+    material: "tmt_steel",
+    uom: "kg",
+    requestedQuantity: 1_200,
+    approvedIssuedQuantity: 1_200,
+    status: "issued",
+    remarks: "Column reinforcement, Block B first floor.",
+    storeRemarks: "Issued from the GRN BB-GRN-2026-003 receipt.",
+    issueDate: "2026-09-06",
+    createdAt: "2026-09-05T09:00:00.000Z",
+    updatedAt: "2026-09-06T11:00:00.000Z",
+  },
+  {
+    id: "storereq_7",
+    projectId: "proj_riverside_apartments",
+    requisitionNumber: "MR-0007",
+    requestedBy: "u_engineer",
+    requestedByName: "Sana Iqbal",
+    requestDate: "2026-09-10",
+    material: "tmt_steel",
+    uom: "kg",
+    requestedQuantity: 900,
+    status: "submitted",
+    remarks: "Additional reinforcement, Block B second floor — checking remaining balance from the September GRN receipt.",
+    createdAt: "2026-09-10T09:30:00.000Z",
+    updatedAt: "2026-09-10T09:30:00.000Z",
+  },
+  {
+    id: "storereq_8",
+    projectId: "proj_heritage_resort",
+    requisitionNumber: "MR-0008",
+    requestedBy: "u_engineer",
+    requestedByName: "Sana Iqbal",
+    requestDate: "2026-08-18",
+    material: "other",
+    otherMaterialName: "Natural Stone Cladding (Dholpur)",
+    uom: "sq.ft",
+    requestedQuantity: 1_500,
+    approvedIssuedQuantity: 1_500,
+    status: "issued",
+    remarks: "Main block lobby facade, phase 1.",
+    storeRemarks: "Issued from the first GRN delivery — 500 sq.ft held back as buffer pending the vendor's balance delivery.",
+    issueDate: "2026-08-19",
+    createdAt: "2026-08-18T10:00:00.000Z",
+    updatedAt: "2026-08-19T12:00:00.000Z",
+  },
+  {
+    id: "storereq_9",
+    projectId: "proj_heritage_resort",
+    requisitionNumber: "MR-0009",
+    requestedBy: "u_pm",
+    requestedByName: "Karan Mehta",
+    requestDate: "2026-09-13",
+    material: "electrical_cable",
+    uom: "meter",
+    requestedQuantity: 250,
+    status: "draft",
+    remarks: "Spa block wiring — draft, not yet sent to Stores.",
+    createdAt: "2026-09-13T15:00:00.000Z",
+    updatedAt: "2026-09-13T15:00:00.000Z",
+  },
+  // storereq_10/storereq_11 — Gorakhpur Business Park (added for broader
+  // demo coverage). storereq_10 is `issued`, deliberately drawing against
+  // the TMT steel GRN receipt above, same reasoning as storereq_6/8.
+  {
+    id: "storereq_10",
+    projectId: "proj_gorakhpur_business_park",
+    requisitionNumber: "MR-0010",
+    requestedBy: "u_engineer",
+    requestedByName: "Sana Iqbal",
+    requestDate: "2026-09-24",
+    material: "tmt_steel",
+    uom: "kg",
+    requestedQuantity: 1_500,
+    approvedIssuedQuantity: 1_500,
+    status: "issued",
+    remarks: "Column reinforcement, office tower core.",
+    storeRemarks: "Issued from the GRN BB-GRN-2026-005 receipt.",
+    issueDate: "2026-09-25",
+    createdAt: "2026-09-24T09:00:00.000Z",
+    updatedAt: "2026-09-25T11:00:00.000Z",
+  },
+  {
+    id: "storereq_11",
+    projectId: "proj_gorakhpur_business_park",
+    requisitionNumber: "MR-0011",
+    requestedBy: "u_engineer",
+    requestedByName: "Sana Iqbal",
+    requestDate: "2026-09-28",
+    material: "tmt_steel",
+    uom: "kg",
+    requestedQuantity: 800,
+    status: "submitted",
+    remarks: "Additional reinforcement — checking remaining balance from the September GRN receipt.",
+    createdAt: "2026-09-28T09:30:00.000Z",
+    updatedAt: "2026-09-28T09:30:00.000Z",
   },
 ];

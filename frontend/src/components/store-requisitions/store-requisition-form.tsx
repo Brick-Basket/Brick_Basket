@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { FormField } from "@/components/ui/form-field";
 import { useSession } from "@/components/providers/auth-provider";
 import { useCreateStoreRequisition, useUpdateStoreRequisition } from "@/hooks/use-store-requisitions";
+import { useMaterialReceiptSummary } from "@/hooks/use-stock";
 import { useProjects } from "@/hooks/use-projects";
 import { STOCK_MATERIAL_CONFIG, STOCK_MATERIAL_ORDER } from "@/components/stock/stock-material-config";
 import type { StoreRequisition } from "@/types/domain/store-requisition";
@@ -71,6 +72,7 @@ export function StoreRequisitionForm({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<StoreRequisitionFormValues>({
     resolver: zodResolver(storeRequisitionFormSchema),
@@ -86,6 +88,14 @@ export function StoreRequisitionForm({
   });
 
   const material = watch("material");
+  const projectId = watch("projectId");
+  // Closes the specific gap of a freshly recorded GRN being invisible here
+  // — a read-only reconciliation aid, same principle as `StockForm`'s
+  // existing GRN/MR/Wastage trace; it never blocks or auto-fills the
+  // request (see `useMaterialReceiptSummary`'s own header comment).
+  const { summary } = useMaterialReceiptSummary(projectId, material);
+  const hasSummary = !!summary && (summary.totalReceived > 0 || summary.totalIssuedViaOtherRequisitions > 0 || summary.totalWasted > 0);
+  const likelyRemaining = summary ? Math.max(0, summary.totalReceived - summary.totalIssuedViaOtherRequisitions - summary.totalWasted) : 0;
 
   const onSubmit = async (values: StoreRequisitionFormValues) => {
     if (!session) return;
@@ -156,6 +166,31 @@ export function StoreRequisitionForm({
         <FormField label="Material Name" htmlFor="mr-other-name" error={errors.otherMaterialName?.message} hint="Only shown when Material is set to Other.">
           <Input id="mr-other-name" invalid={!!errors.otherMaterialName} {...register("otherMaterialName")} />
         </FormField>
+      )}
+
+      {hasSummary && summary && (
+        <div className="flex flex-col gap-2 rounded-card border border-border bg-surface-muted p-3 text-sm">
+          <p className="font-medium text-ink">Received via GRN for this project</p>
+          <p className="text-ink-muted">
+            Received: <span className="font-medium text-ink">{summary.totalReceived.toLocaleString("en-IN")}</span>
+            {summary.receivedLineCount > 0
+              ? ` (${summary.receivedLineCount} line${summary.receivedLineCount === 1 ? "" : "s"}${
+                  summary.grnNumbers.length > 0 ? ` — ${summary.grnNumbers.join(", ")}` : ""
+                })`
+              : ""}
+            {" · "}Already issued via other MRs: <span className="font-medium text-ink">{summary.totalIssuedViaOtherRequisitions.toLocaleString("en-IN")}</span>
+            {" · "}Wastage: <span className="font-medium text-ink">{summary.totalWasted.toLocaleString("en-IN")}</span>
+          </p>
+          <p className="text-xs text-ink-muted">
+            A reference only, not a live stock balance — Stores should still confirm real availability before issuing. Likely remaining:{" "}
+            {likelyRemaining.toLocaleString("en-IN")}.
+          </p>
+          <div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setValue("requestedQuantity", likelyRemaining)}>
+              Request what&apos;s left ({likelyRemaining.toLocaleString("en-IN")})
+            </Button>
+          </div>
+        </div>
       )}
 
       <FormField label="Requested Quantity" htmlFor="mr-quantity" required error={errors.requestedQuantity?.message}>

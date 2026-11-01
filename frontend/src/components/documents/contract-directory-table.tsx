@@ -62,6 +62,7 @@ export function ContractDirectoryTable({
     {
       key: "documents",
       header: "Documents",
+      align: "right",
       render: (c) => (
         <span className="flex items-center gap-1.5">
           <FileText className="h-3.5 w-3.5 text-ink-muted" aria-hidden />

@@ -14,10 +14,11 @@ import { VendorRatingSummary } from "@/components/vendors/vendor-rating-summary"
 import { VendorAssessmentForm } from "@/components/vendors/vendor-assessment-form";
 import { VendorAssessmentHistory } from "@/components/vendors/vendor-assessment-history";
 import { VendorPastWork } from "@/components/vendors/vendor-past-work";
+import { VendorDocuments } from "@/components/vendors/vendor-documents";
 import { formatINR } from "@/lib/utils/format";
 
 export function VendorDetail({ vendorId, onEdit }: { vendorId: string; onEdit: () => void }) {
-  const { status, error, vendor, assessments, pastWork, refetch } = useVendor(vendorId);
+  const { status, error, vendor, assessments, pastWork, documents, refetch } = useVendor(vendorId);
   const [showAssessmentForm, setShowAssessmentForm] = useState(false);
 
   if (status === "loading") {
@@ -85,6 +86,12 @@ export function VendorDetail({ vendorId, onEdit }: { vendorId: string; onEdit: (
                 <dd className="text-ink">{vendor.gstin}</dd>
               </div>
             )}
+            {vendor.panNumber && (
+              <div>
+                <dt className="text-xs text-ink-muted">PAN Number</dt>
+                <dd className="text-ink">{vendor.panNumber}</dd>
+              </div>
+            )}
             {vendor.msmeUdyamNumber && (
               <div>
                 <dt className="text-xs text-ink-muted">MSME/UDYAM Number</dt>
@@ -129,6 +136,12 @@ export function VendorDetail({ vendorId, onEdit }: { vendorId: string; onEdit: (
       <Card>
         <CardContent className="pt-6">
           <VendorPastWork vendorId={vendor.id} entries={pastWork} onAdded={refetch} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-6">
+          <VendorDocuments vendorId={vendor.id} documents={documents} onAdded={refetch} />
         </CardContent>
       </Card>
     </div>

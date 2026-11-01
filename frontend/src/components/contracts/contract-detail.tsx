@@ -12,6 +12,7 @@ import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
 import { ConfirmationDialog } from "@/components/domain/confirmation-dialog";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useSession } from "@/components/providers/auth-provider";
+import { useCustomerId } from "@/hooks/use-customer-id";
 import { useContract, useRespondToContract, useSendContractForAcceptance, useWithdrawContract } from "@/hooks/use-contracts";
 import { contractsAdapter } from "@/lib/api/adapters/contracts-adapter";
 import { ContractStatusTimeline } from "@/components/contracts/contract-status-timeline";
@@ -44,6 +45,7 @@ export function ContractDetail({
   onEdit?: () => void;
 }) {
   const { session } = useSession();
+  const customerId = useCustomerId();
   const { status, error, contract, audit, refetch } = useContract(contractId);
   const { submit: sendForAcceptance, status: sendStatus, error: sendError } = useSendContractForAcceptance();
   const { submit: withdraw, status: withdrawStatus, error: withdrawError } = useWithdrawContract();
@@ -67,6 +69,21 @@ export function ContractDetail({
 
   if (status === "error" || !contract) {
     return <ErrorState title="Could not load this contract" description={error ?? undefined} onRetry={refetch} />;
+  }
+
+  // SECURITY FIX (broad audit pass): the equivalent LIST pages already scope
+  // every row to the signed-in customer via `useCustomerId()` (see that
+  // hook's own header comment, docs/OPEN_QUESTIONS.md #47) — but this single-
+  // record detail route never applied the same check, so a signed-in
+  // customer could view *another* customer's full contract (line items,
+  // amounts, attachment, audit history) just by typing a different id into
+  // `/dashboard/contracts/[id]`. `contractsAdapter.get()` has no concept of
+  // "whose" contract it is — it fetches by id alone — so the ownership check
+  // has to happen here, the same way `useCustomerId()`'s sentinel already
+  // protects the list hooks. Scoped to `perspective === "customer"` only;
+  // the admin surface intentionally has no such restriction.
+  if (perspective === "customer" && contract.customerId !== customerId) {
+    return <ErrorState variant="forbidden" title="You don't have access to this contract" />;
   }
 
   const actor = session ? { id: session.user.id, name: session.user.name } : null;

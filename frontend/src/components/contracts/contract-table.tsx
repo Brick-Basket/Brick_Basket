@@ -49,6 +49,7 @@ export function ContractTable({
     {
       key: "value",
       header: "Value",
+      align: "right",
       render: (c) => formatINR(c.lineItems.reduce((sum, li) => sum + li.quantity * li.rate, 0)),
     },
     {

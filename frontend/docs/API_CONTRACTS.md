@@ -173,9 +173,31 @@ Response `200`: `ContractAuditEntry[]`, newest first. Every one of the endpoints
 
 Errors (all Contract endpoints beyond create): `401` unauthenticated, `403` missing permission, `404` unknown/not-yours contract, `409` invalid status transition, `422` validation.
 
-### Customer (minimal — Part 5)
+### Customer — full CRUD (Part 5 minimal slice; extended in the Customer Module pass)
 
-`GET /api/customers` — `contracts:write` (only consumed by the admin `ContractForm`'s customer picker today). Response `200`: `Customer[]`. No create/edit endpoint yet — customers are backend-created (e.g. from a converted Lead) until a dedicated Customer module ships.
+Frontend files: `src/types/domain/customer.ts`, `src/lib/api/adapters/customers-adapter.ts` (`CustomersAdapter` — mirrors its methods 1:1), `src/hooks/use-customers.ts`.
+
+`GET /api/customers` — `customers:read`. Response `200`: `Customer[]`. **Takes no query params at all** — `/admin/customers` does its own filtering/sorting/pagination client-side over the full list (see `docs/DATA_MODELS.md`, `docs/OPEN_QUESTIONS.md` #80); a real backend may want server-side params as the customer list grows, but nothing in this frontend requires them today. The admin `ContractForm`'s customer picker (previously this endpoint's only consumer, gated by `contracts:write`) now reads through this same list.
+
+`GET /api/customers/:id` — `customers:read`. Response `200`: `Customer`. `404` if not found.
+
+`POST /api/customers` — `customers:write`. Request body (frontend type: `CreateCustomerInput`): `{ name, email, phone, alternatePhone?, address?, notes?, leadId? }`. Backend responsibility: assigns `id`, both timestamps. Valid with no `leadId` at all — this app does not require a Customer to originate from a Lead (see `docs/OPEN_QUESTIONS.md` #79).
+
+`PATCH /api/customers/:id` — `customers:write`. Request body (frontend type: `UpdateCustomerInput`): any subset of `{ name?, email?, phone?, alternatePhone?, address?, notes?, leadId? }`. Sets `updatedAt`. `404` if not found.
+
+Errors (all Customer endpoints): `401` unauthenticated, `403` missing permission, `404` unknown customer, `422` validation (e.g. invalid email).
+
+### Project — read + narrow progress update (Customer Module pass + robust progress mapping follow-up)
+
+Frontend files: `src/types/domain/project.ts`, `src/lib/api/adapters/projects-adapter.ts` (`ProjectsAdapter`), `src/hooks/use-projects.ts`. `Project` itself has no dedicated Part — see `docs/DATA_MODELS.md`'s header note on this section.
+
+`GET /api/projects` — authenticated, no additional permission gate (a customer session is still expected to only ever request/receive its own, via `customerId`). Query params: `customerId?`. Response `200`: `Project[]`.
+
+`GET /api/projects/:id` — same access rule. Response `200`: `Project`. `404` if not found.
+
+`PATCH /api/projects/:id` — `customers:write` (only staff can edit progress today; there is no customer-facing write path for this field). Request body (frontend type: `UpdateProjectInput`): `{ progressPercentage?, source?: "manual" | "schedule_computed", reason? }`. Backend responsibility: on an actual value change, atomically (a) updates `Project.progressPercentage` and (b) appends one `ProjectProgressLogEntry` (`previousPercentage`, `newPercentage`, `source`, `reason?`, `changedBy`/`changedByName` from the authenticated session, `changedAt`) — the frontend's mock adapter does both as separate in-memory writes; a real backend should treat this as one transaction. A no-op call (`progressPercentage` unchanged) should write nothing — neither the Project row nor a log entry. `404` if not found, `422` if `progressPercentage` is outside 0–100.
+
+`GET /api/projects/:id/progress-log` — `customers:read`. Response `200`: `ProjectProgressLogEntry[]`, newest first. **No endpoint exists to create an entry directly** — every entry is only ever a side effect of `PATCH /api/projects/:id` above.
 
 ---
 

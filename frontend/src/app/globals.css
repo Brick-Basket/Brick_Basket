@@ -43,6 +43,7 @@
 
   --border: 236 225 216;
   --radius-card: 0.75rem;
+  color-scheme: light;
 
   /*
    * Primary Font per the brand guide is "Super Wonder" (logo wordmark,
@@ -53,9 +54,63 @@
    * layout.tsx) is back to being the actual rendered heading font, not a
    * fallback. See docs/OPEN_QUESTIONS.md #13. Secondary Font "Poppins" is
    * the confirmed body font and loads for real via next/font/google.
+   *
+   * FRONTEND FIX (Hindi font fallback — see layout.tsx's comment on
+   * `headingFallback`/`bodyDevanagari`, and docs/CHANGELOG.md): Poppins and
+   * Baloo 2 both used to be Latin-only, so Hindi text fell all the way
+   * through to `system-ui` and rendered in a plain, inconsistent system
+   * font. Baloo 2 (`--font-heading-fallback`) now carries real Devanagari
+   * glyphs itself (its own `subsets` array in layout.tsx just needed
+   * `"devanagari"` added — it was never a different-font problem for
+   * headings), so no extra heading variable is needed here. Poppins has no
+   * Devanagari glyphs at all, so `--font-sans-devanagari` (Hind) is
+   * inserted right after it for body text — CSS's normal per-glyph font
+   * fallback picks it up automatically for Devanagari characters only;
+   * English text is entirely unaffected, still resolving to Poppins/Baloo 2
+   * exactly as before.
    */
-  --font-sans: var(--font-poppins), system-ui, sans-serif;
-  --font-heading: var(--font-heading-fallback), var(--font-poppins), system-ui, sans-serif;
+  --font-sans: var(--font-poppins), var(--font-sans-devanagari), system-ui, sans-serif;
+  --font-heading: var(--font-heading-fallback), var(--font-poppins), var(--font-sans-devanagari), system-ui, sans-serif;
+}
+
+/*
+ * FRONTEND ADDITION (dark mode, requested across the whole app — public
+ * site + admin dashboard + customer portal): matches the `darkMode:
+ * ["class"]` strategy already (but previously unused) configured in
+ * tailwind.config.ts — `ThemeProvider` (src/components/providers/
+ * theme-provider.tsx) toggles a `dark` class on `<html>`, same mechanism
+ * and the same mount-then-hydrate-from-`localStorage` pattern already
+ * proven by `LanguageProvider`/`bb_lang`, plus a pre-hydration inline
+ * script in layout.tsx so there's no flash of the wrong theme on load.
+ *
+ * This only needed to override the neutral surface/text/border tokens
+ * below, not a single component file: nearly everything in this codebase
+ * (Card, Badge, Input, Select, the public header/footer, the admin/portal
+ * AppShell/Sidebar/Topbar, DataTable, …) already renders through these
+ * same CSS variables via Tailwind's `bg-surface`/`text-ink`/`border-border`
+ * utilities rather than hardcoded colors (confirmed by grepping for raw
+ * Tailwind palette classes — `bg-white`, `text-gray-600`, etc. — across
+ * `src`: the ~80 hits that exist are deliberate, theme-independent brand
+ * surfaces, e.g. `bg-brand-red text-white` CTA bands, `bg-black/40` modal
+ * backdrops, and the print-only Cost Estimator summary card, which stays
+ * black-on-white on purpose since printed paper has no "dark mode"). So
+ * flipping these variables re-themes the whole app for free.
+ *
+ * `--brand-red`/`--brand-charcoal`/`--brand-ivory`/`--brand-amber`
+ * themselves are deliberately NOT overridden here — they're the literal
+ * confirmed brand swatches (docs/BRAND_GUIDELINES.md), used on their own
+ * fixed-color surfaces (buttons, the red CTA bands, the charcoal footer)
+ * that should look the same, brand-correct red/charcoal, in either theme.
+ * Only the neutral tokens that stand in for "page background" / "card
+ * surface" / "body text" / "hairline border" change per theme.
+ */
+:root.dark {
+  --surface: 38 32 31; /* elevated card/content surface — warm dark, slightly lighter than the page background below */
+  --surface-muted: 20 17 16; /* page background — darkest layer, same warm-charcoal undertone as the brand's Charcoal Brown rather than a cold gray/blue-black */
+  --ink: 245 239 234; /* primary text — warm off-white, not pure #fff (softer on a dark background) */
+  --ink-muted: 176 163 157; /* secondary text — brightened from light mode's muted brown so it still clears contrast on a dark surface */
+  --border: 64 55 53; /* hairline borders/dividers */
+  color-scheme: dark; /* also themes native form controls (checkboxes, date pickers) and the browser scrollbar */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -75,8 +130,13 @@ html {
 
 body {
   /* Brand guide: "Use Warm Ivory as the primary background color to ensure
-     clarity and focus." Cards/content surfaces use --surface (white) on top. */
-  background-color: rgb(var(--brand-ivory));
+     clarity and focus." Cards/content surfaces use --surface (white) on top.
+     FRONTEND FIX (dark mode): this used to read `--brand-ivory` directly —
+     the literal, theme-independent brand swatch — so the page background
+     could never change in dark mode. `--surface-muted` equals the same
+     ivory value in light mode (see its definition above) but is one of the
+     tokens `:root.dark` overrides, so the page now actually goes dark. */
+  background-color: rgb(var(--surface-muted));
   color: rgb(var(--ink));
 }
 

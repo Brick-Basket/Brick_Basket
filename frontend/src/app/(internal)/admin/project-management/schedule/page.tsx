@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -8,8 +8,10 @@ import { EmptyState } from "@/components/domain/empty-state";
 import { ErrorState } from "@/components/domain/error-state";
 import { LoadingSkeleton } from "@/components/domain/loading-skeleton";
 import { PermissionGuard } from "@/components/shell/permission-guard";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { useScheduleActivities, useScheduleProgressMap } from "@/hooks/use-schedule";
 import { ScheduleFilters } from "@/components/schedule/schedule-filters";
+import { ScheduleOverallProgress } from "@/components/schedule/schedule-overall-progress";
 import { ScheduleGanttChart } from "@/components/schedule/schedule-gantt-chart";
 import { ScheduleTable } from "@/components/schedule/schedule-table";
 import { ScheduleMonthlyPlanTable } from "@/components/schedule/schedule-monthly-plan-table";
@@ -39,17 +41,18 @@ export default function AdminSchedulePage() {
 }
 
 function AdminScheduleContent() {
-  // Defaults to Modern Residence — the project with the fullest seeded
-  // schedule (every computed progress state is represented there); any
-  // project can still be picked from the filter, including one with no
-  // schedule data yet, to exercise the empty state. BrickBasket final
-  // hardening pass (P2 mock import cleanup): this is a plain default id,
-  // not a live lookup, so it no longer needs `mockProjects` at all — the
-  // actual project list (for `ScheduleFilters`' dropdown) is loaded
-  // through the Schedule adapter's own project-scoped hook, not read
-  // directly from mock data here.
+  // BrickBasket "Project Management Navigation and Persistent Project
+  // Selection" correction: `filters.projectId` used to be a hardcoded
+  // default ("proj_modern_residence") picked only for having the fullest
+  // seeded demo data, with no link at all to what Schedule's own
+  // `ScheduleFilters` Select showed — switching the project there updated
+  // only this page. It's now the shared `ProjectProvider` selection
+  // (`useProjectContext`), kept in sync below, so Schedule shows whatever
+  // project the user last picked anywhere in Project Management (Schedule,
+  // DPR or Site Updates), and switching it here carries over the same way.
+  const { selected } = useProjectContext();
   const [filters, setFilters] = useState<ScheduleListParams>({
-    projectId: "proj_modern_residence",
+    projectId: selected?.id ?? "",
     page: 1,
     pageSize: PAGE_SIZE,
     sortBy: "sequence",
@@ -58,6 +61,24 @@ function AdminScheduleContent() {
   const [showForm, setShowForm] = useState(false);
   const [editingActivity, setEditingActivity] = useState<ScheduleActivity | null>(null);
   const [progressActivity, setProgressActivity] = useState<ScheduleActivity | null>(null);
+
+  // Keeps this page's own filter state mirroring the shared selection —
+  // Schedule has no "All projects" view (see `ScheduleFilters`), so unlike
+  // DPR/Site Updates there's no competing local choice to preserve: the
+  // shared `ProjectSelector` (rendered inside `ScheduleFilters`) is this
+  // page's only project control.
+  useEffect(() => {
+    if (selected && selected.id !== filters.projectId) {
+      setFilters((prev) => ({ ...prev, projectId: selected.id, page: 1 }));
+    }
+  }, [selected, filters.projectId]);
+
+  // True only once `filters.projectId` actually reflects the current
+  // selection — guards the data below from briefly rendering the
+  // *previous* project's activities (or, on first load before a project
+  // resolves, an unscoped "every project" fetch) while the sync effect
+  // above catches up.
+  const hasProject = !!selected && filters.projectId === selected.id;
 
   const { status, error, result, refetch } = useScheduleActivities(filters);
   const activityIds = (result?.items ?? []).map((a) => a.id);
@@ -89,7 +110,7 @@ function AdminScheduleContent() {
           <p className="text-sm text-ink-muted">Activity, quantity, UOM and planned dates, tracked against actual executed quantities.</p>
         </div>
         <PermissionGuard permission="schedule:write">
-          <Button onClick={() => setShowForm(true)}>
+          <Button onClick={() => setShowForm(true)} disabled={!hasProject}>
             <Plus className="h-4 w-4" aria-hidden />
             New Activity
           </Button>
@@ -98,21 +119,26 @@ function AdminScheduleContent() {
 
       <ScheduleFilters value={filters} onChange={setFilters} />
 
-      {status === "loading" && (
+      {!hasProject && (
+        <EmptyState title="Select a project" description="Choose a project above to view and manage its schedule." />
+      )}
+
+      {hasProject && status === "loading" && (
         <div className="flex flex-col gap-3">
           <LoadingSkeleton className="h-40 w-full" />
           <LoadingSkeleton className="h-64 w-full" />
         </div>
       )}
 
-      {status === "error" && <ErrorState title="Could not load the schedule" description={error ?? undefined} onRetry={refetch} />}
+      {hasProject && status === "error" && <ErrorState title="Could not load the schedule" description={error ?? undefined} onRetry={refetch} />}
 
-      {status === "success" && result && result.items.length === 0 && (
+      {hasProject && status === "success" && result && result.items.length === 0 && (
         <EmptyState title="No activities yet" description="Add the first activity for this project to start tracking its schedule." />
       )}
 
-      {status === "success" && result && result.items.length > 0 && (
+      {hasProject && filters.projectId && status === "success" && result && result.items.length > 0 && (
         <>
+          <ScheduleOverallProgress projectId={filters.projectId} />
           <ScheduleGanttChart activities={result.items} progressByActivity={progressByActivity} />
           <ScheduleTable
             activities={result.items}

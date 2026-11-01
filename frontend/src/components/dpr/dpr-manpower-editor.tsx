@@ -29,14 +29,14 @@ export function DPRManpowerEditor({
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm font-medium text-ink">Manpower</p>
-      <div className="overflow-x-auto rounded-card border border-border">
+      <div className="max-h-[70vh] overflow-auto rounded-card border border-border">
         <table className="w-full min-w-[560px] text-sm">
-          <thead className="bg-surface-muted text-left text-xs font-medium uppercase tracking-wide text-ink-muted">
+          <thead className="sticky top-0 z-10 bg-surface-muted text-left text-xs font-medium uppercase tracking-wide text-ink-muted">
             <tr>
               <th className="px-3 py-2">Category</th>
               <th className="px-3 py-2">Skilled</th>
               <th className="px-3 py-2">Unskilled</th>
-              <th className="px-3 py-2">Total</th>
+              <th className="px-3 py-2 text-right">Total</th>
               <th className="px-3 py-2">Agency</th>
             </tr>
           </thead>
@@ -70,7 +70,7 @@ function ManpowerRow({
   const total = getTotalManpower(Number(skilled) || 0, Number(unskilled) || 0);
 
   return (
-    <tr>
+    <tr className="even:bg-surface-muted/40">
       <td className="whitespace-nowrap px-3 py-2 font-medium text-ink">{label}</td>
       <td className="px-3 py-2">
         <Label htmlFor={`dpr-mp-skilled-${index}`} className="sr-only">
@@ -100,7 +100,7 @@ function ManpowerRow({
           {...register(`manpower.${index}.unskilled`)}
         />
       </td>
-      <td className="whitespace-nowrap px-3 py-2 text-ink-muted">{total}</td>
+      <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums text-ink-muted">{total}</td>
       <td className="px-3 py-2">
         <Label htmlFor={`dpr-mp-agency-${index}`} className="sr-only">
           {label} agency

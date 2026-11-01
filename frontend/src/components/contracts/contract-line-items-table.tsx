@@ -7,9 +7,9 @@ export function ContractLineItemsTable({ lineItems }: { lineItems: ContractLineI
   const total = lineItems.reduce((sum, li) => sum + li.quantity * li.rate, 0);
 
   return (
-    <div className="overflow-x-auto rounded-card border border-border">
+    <div className="max-h-[70vh] overflow-auto rounded-card border border-border">
       <table className="w-full text-left text-sm">
-        <thead className="border-b border-border bg-surface-muted">
+        <thead className="sticky top-0 z-10 border-b border-border bg-surface-muted">
           <tr>
             <th className="whitespace-nowrap px-4 py-3 font-medium text-ink-muted">Category</th>
             <th className="px-4 py-3 font-medium text-ink-muted">Description</th>
@@ -21,13 +21,13 @@ export function ContractLineItemsTable({ lineItems }: { lineItems: ContractLineI
         </thead>
         <tbody>
           {lineItems.map((li) => (
-            <tr key={li.id} className="border-b border-border last:border-0">
+            <tr key={li.id} className="border-b border-border last:border-0 even:bg-surface-muted/40">
               <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{CONTRACT_CATEGORY_CONFIG[li.category].label}</td>
               <td className="px-4 py-3 text-ink">{li.description}</td>
               <td className="whitespace-nowrap px-4 py-3 text-ink-muted">{li.uom}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{li.quantity.toLocaleString("en-IN")}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-right text-ink">{formatINR(li.rate)}</td>
-              <td className="whitespace-nowrap px-4 py-3 text-right font-medium text-ink">{formatINR(li.quantity * li.rate)}</td>
+              <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink">{li.quantity.toLocaleString("en-IN")}</td>
+              <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums text-ink">{formatINR(li.rate)}</td>
+              <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-medium text-ink">{formatINR(li.quantity * li.rate)}</td>
             </tr>
           ))}
         </tbody>
@@ -36,7 +36,7 @@ export function ContractLineItemsTable({ lineItems }: { lineItems: ContractLineI
             <td colSpan={5} className="px-4 py-3 text-right font-medium text-ink">
               Total
             </td>
-            <td className="whitespace-nowrap px-4 py-3 text-right font-semibold text-ink">{formatINR(total)}</td>
+            <td className="whitespace-nowrap px-4 py-3 text-right tabular-nums font-semibold text-ink">{formatINR(total)}</td>
           </tr>
         </tfoot>
       </table>

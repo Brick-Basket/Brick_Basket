@@ -131,8 +131,16 @@ export function WastageForm({
       </div>
 
       {material === "other" && (
-        <FormField label="Material Name" htmlFor="waste-other-name" hint="Only shown when Material is set to Other.">
-          <Input id="waste-other-name" {...register("otherMaterialName")} />
+        // UI FIX (broad audit pass): same missing error/invalid wiring as
+        // `stock-form.tsx` — the schema already requires this field, the
+        // display never surfaced it.
+        <FormField
+          label="Material Name"
+          htmlFor="waste-other-name"
+          error={errors.otherMaterialName?.message}
+          hint="Only shown when Material is set to Other."
+        >
+          <Input id="waste-other-name" invalid={!!errors.otherMaterialName} {...register("otherMaterialName")} />
         </FormField>
       )}
 

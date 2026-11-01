@@ -8,21 +8,29 @@ import { AlertTriangle, Briefcase, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { FormField } from "@/components/ui/form-field";
 import { EmptyState } from "@/components/domain/empty-state";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { useSession } from "@/components/providers/auth-provider";
 import { useAddVendorPastWork } from "@/hooks/use-vendors";
+import { VENDOR_PAST_WORK_STATUS_CONFIG, VENDOR_PAST_WORK_STATUS_ORDER } from "@/components/vendors/vendor-config";
 import { formatDate, formatINR } from "@/lib/utils/format";
 import { useProjects } from "@/hooks/use-projects";
 import type { VendorPastWorkEntry } from "@/types/domain/vendor";
 
-const pastWorkFormSchema = z.object({
-  projectId: z.string().optional(),
-  description: z.string().min(1, "Description is required"),
-  value: z.coerce.number().min(0, "Value cannot be negative"),
-  completedAt: z.string().min(1, "Completion date is required"),
-});
+const pastWorkFormSchema = z
+  .object({
+    projectId: z.string().optional(),
+    description: z.string().min(1, "Description is required"),
+    value: z.coerce.number().min(0, "Value cannot be negative"),
+    status: z.enum(["completed", "in_progress"]),
+    completedAt: z.string().optional(),
+  })
+  .refine((data) => data.status !== "completed" || !!data.completedAt?.trim(), {
+    message: "Completion date is required for completed work",
+    path: ["completedAt"],
+  });
 
 type PastWorkFormValues = z.infer<typeof pastWorkFormSchema>;
 
@@ -31,6 +39,10 @@ type PastWorkFormValues = z.infer<typeof pastWorkFormSchema>;
  * FRONTEND IMPLEMENTATION DECISION on the data model — see
  * `src/types/domain/vendor.ts`'s header comment on `VendorPastWorkEntry`
  * and docs/OPEN_QUESTIONS.md #28.
+ *
+ * Document 2 correction: each entry now carries a "completed" vs. "under
+ * progress" status — "Completed On" is only required (and only shown as
+ * applicable) once status is "completed".
  */
 export function VendorPastWork({ vendorId, entries, onAdded }: { vendorId: string; entries: VendorPastWorkEntry[]; onAdded: () => void }) {
   const { session } = useSession();
@@ -41,12 +53,15 @@ export function VendorPastWork({ vendorId, entries, onAdded }: { vendorId: strin
   const {
     register,
     handleSubmit,
+    watch,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<PastWorkFormValues>({
     resolver: zodResolver(pastWorkFormSchema),
-    defaultValues: { projectId: "", description: "", value: 0, completedAt: "" },
+    defaultValues: { projectId: "", description: "", value: 0, status: "completed", completedAt: "" },
   });
+
+  const workStatus = watch("status");
 
   const onSubmit = async (values: PastWorkFormValues) => {
     if (!session) return;
@@ -56,7 +71,8 @@ export function VendorPastWork({ vendorId, entries, onAdded }: { vendorId: strin
         projectId: values.projectId || undefined,
         description: values.description,
         value: values.value,
-        completedAt: new Date(values.completedAt).toISOString(),
+        status: values.status,
+        completedAt: values.status === "completed" ? new Date(values.completedAt!).toISOString() : undefined,
       },
       { id: session.user.id, name: session.user.name },
     );
@@ -100,10 +116,21 @@ export function VendorPastWork({ vendorId, entries, onAdded }: { vendorId: strin
             <FormField label="Value (₹)" htmlFor="pastwork-value" required error={errors.value?.message}>
               <Input id="pastwork-value" type="number" min={0} invalid={!!errors.value} {...register("value")} />
             </FormField>
+            <FormField label="Status" htmlFor="pastwork-status" required>
+              <Select id="pastwork-status" {...register("status")}>
+                {VENDOR_PAST_WORK_STATUS_ORDER.map((s) => (
+                  <option key={s} value={s}>
+                    {VENDOR_PAST_WORK_STATUS_CONFIG[s].label}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
+          </div>
+          {workStatus === "completed" && (
             <FormField label="Completed On" htmlFor="pastwork-completed" required error={errors.completedAt?.message}>
               <Input id="pastwork-completed" type="date" invalid={!!errors.completedAt} {...register("completedAt")} />
             </FormField>
-          </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-2 rounded-md border border-error/30 bg-error/5 px-3 py-2 text-sm text-error">
@@ -130,12 +157,17 @@ export function VendorPastWork({ vendorId, entries, onAdded }: { vendorId: strin
         <ul className="flex flex-col gap-2">
           {entries.map((entry) => {
             const project = entry.projectId ? allProjects.find((p) => p.id === entry.projectId) : null;
+            const statusConfig = VENDOR_PAST_WORK_STATUS_CONFIG[entry.status];
             return (
               <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-border bg-surface p-3 text-sm">
                 <div>
-                  <p className="text-ink">{entry.description}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-ink">{entry.description}</p>
+                    <Badge variant={statusConfig.badgeVariant}>{statusConfig.label}</Badge>
+                  </div>
                   <p className="text-xs text-ink-muted">
-                    {project ? `${project.name} · ` : ""}Completed {formatDate(entry.completedAt)}
+                    {project ? `${project.name} · ` : ""}
+                    {entry.completedAt ? `Completed ${formatDate(entry.completedAt)}` : "Still in progress"}
                   </p>
                 </div>
                 <p className="font-medium text-ink">{formatINR(entry.value)}</p>

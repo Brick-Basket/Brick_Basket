@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { usePermission } from "@/lib/permissions/use-permission";
 import { useGSTRRecords } from "@/hooks/use-gstr";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { GSTRFilters } from "@/components/finance/gstr-filters";
 import { GSTRTable } from "@/components/finance/gstr-table";
 import { GSTRForm } from "@/components/finance/gstr-form";
@@ -59,6 +60,25 @@ function AdminGSTRContent() {
   const activeQuery = tab === "purchase" ? purchaseQuery : salesQuery;
   const activeFilters = tab === "purchase" ? purchaseFilters : salesFilters;
   const setActiveFilters = tab === "purchase" ? setPurchaseFilters : setSalesFilters;
+
+  // BrickBasket "everything interconnected" connectivity fix: both the
+  // Purchase and Sales tabs already had a Project dropdown, but neither
+  // followed the shared Global Project Selector — same follow pattern as
+  // `GRNFilters`/Documents, applied to both tabs' filter state at once so
+  // switching tabs doesn't lose the shared selection.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setPurchaseFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+      setSalesFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: GSTRListParams) => {
+    if (next.projectId !== activeFilters.projectId) userOverrodeProjectRef.current = true;
+    setActiveFilters(next);
+  };
 
   const handleSortChange = (key: string) => {
     setActiveFilters((prev) => ({
@@ -117,7 +137,7 @@ function AdminGSTRContent() {
         </div>
       )}
 
-      <GSTRFilters value={activeFilters} onChange={setActiveFilters} />
+      <GSTRFilters value={activeFilters} onChange={handleFiltersChange} />
 
       {activeQuery.status === "loading" && (
         <div className="flex flex-col gap-3">

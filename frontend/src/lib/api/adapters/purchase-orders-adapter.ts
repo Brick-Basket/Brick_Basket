@@ -32,8 +32,15 @@ import { rfqAdapter } from "@/lib/api/adapters/rfq-adapter";
  *   POST   /api/purchase-orders/:id/submit           — submit for level 1 approval (po:create)
  *   POST   /api/purchase-orders/:id/decide-level1     — approve or reject at level 1 (po:approve:level1)
  *   POST   /api/purchase-orders/:id/decide-level2     — approve or reject at level 2 (po:approve:level2)
- *   POST   /api/purchase-orders/:id/release           — release an approved PO (po:issue)
+ *   POST   /api/purchase-orders/:id/release           — release an approved PO (po:release)
  *   POST   /api/purchase-orders/:id/issue             — issue a released PO, dispatch email (po:issue)
+ *
+ * `po:release` is a distinct permission key from `po:issue` (split by the
+ * BrickBasket business-requirements audit pass, closing
+ * docs/OPEN_QUESTIONS.md #31c — see docs/CHANGELOG.md and
+ * src/lib/permissions/permissions.ts). Both roles that could issue a PO
+ * before this split (`admin`, `purchaser`) hold both keys, so no existing
+ * access was narrowed or widened.
  */
 export interface PurchaseOrderActor {
   id: string;

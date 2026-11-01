@@ -43,6 +43,13 @@ export interface Vendor {
   gstCategory: VendorGSTCategory;
   /** Required when `gstCategory === "registered"`; not applicable otherwise. */
   gstin?: string;
+  /**
+   * Document 2 correction: PAN was missing from the vendor profile — added
+   * as an optional field (not every vendor record in this mock dataset has
+   * one on file) alongside the existing GSTIN/MSME-UDYAM identifiers. See
+   * docs/OPEN_QUESTIONS.md #82.
+   */
+  panNumber?: string;
   address: string;
   /** Optional — not every vendor has MSME/UDYAM registration. */
   msmeUdyamNumber?: string;
@@ -90,13 +97,51 @@ export type CreateVendorAssessmentInput = Pick<
 >;
 
 /**
+ * Document 2 correction: vendor document attachments — "option to attach
+ * vendor documents (e.g. PAN card, GSTIN certificate, MSME/UDYAM
+ * certificate, or other supporting documents), selecting the type of
+ * document first." Modeled as its own append-only per-vendor list (same
+ * "metadata-only, no real backend storage yet" treatment as
+ * `Document`/`SiteUpdateMedia`): the uploaded file's bytes are kept only
+ * as an in-memory object URL for this session
+ * (`VendorsAdapter.getDocumentPreviewUrl`), never persisted — choosing a
+ * file is optional, a document can be logged as metadata-only. See
+ * docs/OPEN_QUESTIONS.md #82.
+ */
+export type VendorDocumentType = "pan_card" | "gstin_certificate" | "msme_udyam_certificate" | "other";
+
+export interface VendorDocument {
+  id: string;
+  vendorId: string;
+  documentType: VendorDocumentType;
+  /** Free-text label — shown instead of the type's default label when set; typically only used for `"other"`. */
+  label?: string;
+  fileName: string;
+  fileType: string;
+  fileSizeBytes: number;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+}
+
+export type CreateVendorDocumentInput = Pick<VendorDocument, "documentType" | "label" | "fileName" | "fileType" | "fileSizeBytes">;
+
+/**
+ * Document 2 correction: past-work entries need a "completed" vs. "under
+ * progress" status — previously every entry was implicitly treated as
+ * finished work. `completedAt` is only meaningful once `status` is
+ * `"completed"`; see `VendorPastWorkEntry` below.
+ */
+export type VendorPastWorkStatus = "completed" | "in_progress";
+
+/**
  * FRONTEND IMPLEMENTATION DECISION: the owner requirements call for a
  * "past work section" showing "past BrickBasket work experience/value"
  * but don't define its data model. Modeled as a minimal append-only log
- * per vendor — description + value + completion date, optionally linked
- * to one of the mock projects — the same thin-slice treatment
- * `VendorPastWorkEntry` gets here as `Customer` got in Part 5. See
- * docs/OPEN_QUESTIONS.md #28.
+ * per vendor — description + value + status (+ completion date once
+ * completed), optionally linked to one of the mock projects — the same
+ * thin-slice treatment `VendorPastWorkEntry` gets here as `Customer` got
+ * in Part 5. See docs/OPEN_QUESTIONS.md #28.
  */
 export interface VendorPastWorkEntry {
   id: string;
@@ -105,8 +150,10 @@ export interface VendorPastWorkEntry {
   description: string;
   /** Rupees — a plain number, formatted only at render time. */
   value: number;
-  completedAt: string;
+  status: VendorPastWorkStatus;
+  /** Set only when `status === "completed"` — work still under progress has no completion date yet. */
+  completedAt?: string;
   createdAt: string;
 }
 
-export type CreateVendorPastWorkInput = Pick<VendorPastWorkEntry, "projectId" | "description" | "value" | "completedAt">;
+export type CreateVendorPastWorkInput = Pick<VendorPastWorkEntry, "projectId" | "description" | "value" | "status" | "completedAt">;

@@ -97,12 +97,14 @@ function PricingContentPageContent() {
       {
         key: "qtyPerSqft",
         header: "Qty / sqft",
+        align: "right",
         render: (row) => `${row.qtyPerSqft} ${row.unit}`,
         hideOnMobile: true,
       },
       {
         key: "rate",
         header: "Rate (₹ / unit)",
+        align: "right",
         render: (row) =>
           row.group === "structure" ? (
             formatINR(row.ratePerUnit.essential)

@@ -13,14 +13,14 @@ export function DPRManpowerTable({ entries }: { entries: DPRManpowerEntry[] }) {
   const grandUnskilled = entries.reduce((sum, e) => sum + e.unskilled, 0);
 
   return (
-    <div className="overflow-x-auto rounded-card border border-border">
+    <div className="max-h-[70vh] overflow-auto rounded-card border border-border">
       <table className="w-full min-w-[560px] text-sm">
-        <thead className="bg-surface-muted text-left text-xs font-medium uppercase tracking-wide text-ink-muted">
+        <thead className="sticky top-0 z-10 bg-surface-muted text-left text-xs font-medium uppercase tracking-wide text-ink-muted">
           <tr>
             <th className="px-3 py-2">Category</th>
-            <th className="px-3 py-2">Skilled</th>
-            <th className="px-3 py-2">Unskilled</th>
-            <th className="px-3 py-2">Total</th>
+            <th className="px-3 py-2 text-right">Skilled</th>
+            <th className="px-3 py-2 text-right">Unskilled</th>
+            <th className="px-3 py-2 text-right">Total</th>
             <th className="px-3 py-2">Agency</th>
           </tr>
         </thead>
@@ -30,11 +30,11 @@ export function DPRManpowerTable({ entries }: { entries: DPRManpowerEntry[] }) {
             const skilled = entry?.skilled ?? 0;
             const unskilled = entry?.unskilled ?? 0;
             return (
-              <tr key={cat.value}>
+              <tr key={cat.value} className="even:bg-surface-muted/40">
                 <td className="whitespace-nowrap px-3 py-2 font-medium text-ink">{cat.label}</td>
-                <td className="px-3 py-2 text-ink">{skilled}</td>
-                <td className="px-3 py-2 text-ink">{unskilled}</td>
-                <td className="px-3 py-2 text-ink">{getTotalManpower(skilled, unskilled)}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-ink">{skilled}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-ink">{unskilled}</td>
+                <td className="px-3 py-2 text-right tabular-nums text-ink">{getTotalManpower(skilled, unskilled)}</td>
                 <td className="px-3 py-2 text-ink-muted">{entry?.agency || "—"}</td>
               </tr>
             );
@@ -43,9 +43,9 @@ export function DPRManpowerTable({ entries }: { entries: DPRManpowerEntry[] }) {
         <tfoot>
           <tr className="border-t border-border bg-surface-muted font-medium text-ink">
             <td className="px-3 py-2">Total</td>
-            <td className="px-3 py-2">{grandSkilled}</td>
-            <td className="px-3 py-2">{grandUnskilled}</td>
-            <td className="px-3 py-2">{getTotalManpower(grandSkilled, grandUnskilled)}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{grandSkilled}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{grandUnskilled}</td>
+            <td className="px-3 py-2 text-right tabular-nums">{getTotalManpower(grandSkilled, grandUnskilled)}</td>
             <td className="px-3 py-2" />
           </tr>
         </tfoot>

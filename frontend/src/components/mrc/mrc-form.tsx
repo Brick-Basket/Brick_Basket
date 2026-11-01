@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -101,6 +101,11 @@ export function MRCForm({
     if (updated) onSuccess(updated);
   };
 
+  // Scopes the line editor's "From GRN" picker to whichever project is
+  // currently selected above — see use-mrc.ts's useGRNLinesForPicker and
+  // mrc-line-items-editor.tsx's header comment for why.
+  const selectedProjectId = useWatch({ control, name: "projectId" });
+
   const submitting = isSubmitting || createStatus === "loading" || updateStatus === "loading";
   const submitError = mode === "create" ? createError : updateError;
 
@@ -134,7 +139,7 @@ export function MRCForm({
         </FormField>
       </div>
 
-      <MRCLineItemsEditor control={control} register={register} setValue={setValue} errors={errors} />
+      <MRCLineItemsEditor control={control} register={register} setValue={setValue} errors={errors} projectId={selectedProjectId || undefined} />
 
       <FormField label="Notes (optional)" htmlFor="mrc-notes">
         <Textarea id="mrc-notes" {...register("notes")} />

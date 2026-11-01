@@ -20,7 +20,10 @@ export function ClosingCtaSection() {
     <section className="bg-brand-red text-white">
       <div className="container flex flex-col items-center justify-between gap-6 py-12 md:flex-row">
         <div>
-          <h2 className="font-heading text-2xl font-bold md:text-3xl">
+          {/* leading-snug — same Devanagari line-overlap fix as HeroSection
+              and SectionHeading; this title can wrap in Hindi. See
+              docs/CHANGELOG.md. */}
+          <h2 className="font-heading text-2xl font-bold leading-snug md:text-3xl">
             {renderHighlighted(t("closingCta.title"), "text-brand-charcoal")}
           </h2>
           <p className="mt-1 text-white/85">{t("closingCta.subtitle")}</p>

@@ -38,26 +38,31 @@ export function CostToCompleteTable({
     {
       key: "originalEstimate",
       header: "Original Estimate (A)",
+      align: "right",
       render: (r) => formatINR(r.originalEstimate),
     },
     {
       key: "completedToDate",
       header: "Completed till date (B)",
+      align: "right",
       render: (r) => formatINR(r.completedToDate),
     },
     {
       key: "balanceToComplete",
       header: "Balance to complete (C)",
+      align: "right",
       render: (r) => formatINR(r.balanceToComplete),
     },
     {
       key: "totalEstimatedValue",
       header: "Total Estimated Value (D=B+C)",
+      align: "right",
       render: (r) => <span className="font-medium text-ink">{formatINR(r.totalEstimatedValue)}</span>,
     },
     {
       key: "variance",
       header: "Variance",
+      align: "right",
       render: (r) => {
         const status = getVarianceStatus(r.originalEstimate, r.totalEstimatedValue);
         const { label, variant } = VARIANCE_BADGE[status];

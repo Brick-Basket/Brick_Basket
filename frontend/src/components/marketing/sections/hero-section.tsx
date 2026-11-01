@@ -21,7 +21,30 @@ export function HeroSection({ id, className }: { id?: string; className?: string
   return (
     <section id={id} className={className}>
       <div>
-        <h1 className="font-heading text-4xl font-extrabold leading-tight text-ink md:text-5xl">
+        {/*
+          FRONTEND FIX (Hindi text overlapping across lines — full history
+          in docs/CHANGELOG.md): `leading-tight` (1.25) and `leading-normal`
+          (1.5) both genuinely overlapped — Devanagari matras/conjuncts/reph
+          marks need more vertical room than a Latin-tuned ratio assumes,
+          especially at this heading's bold weight and large size.
+          `leading-loose` (2.0, as a Tailwind class) and then an inline
+          `style={{ lineHeight: 2.3 }}` were tried next; 2.3 was confirmed
+          (via the English hero rendering with an obviously large gap) to
+          be more space than needed — too loose.
+
+          Settled at `lineHeight: 1.75` — between the confirmed-too-tight
+          1.5 and the confirmed-too-loose 2.3. Kept as an inline `style`,
+          not a Tailwind utility class, for two reasons: it sidesteps an
+          earlier Tailwind JIT/cache reliability issue where `leading-loose`
+          wasn't actually being applied at all, and — just as important —
+          it means a value change here is a single obvious line to check
+          for in the file (no risk of confusing it with another `leading-*`
+          class elsewhere) if this needs tuning again.
+        */}
+        <h1
+          className="font-heading text-4xl font-extrabold text-ink md:text-5xl"
+          style={{ lineHeight: 1.75 }}
+        >
           {renderHighlighted(t("hero.title"))}
         </h1>
         <p className="mt-5 max-w-md text-ink-muted">{t("hero.subtitle")}</p>

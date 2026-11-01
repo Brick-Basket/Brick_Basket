@@ -154,15 +154,24 @@ export interface GRNLinePickerOption {
  * the `source: "grn"` picker in `MRCLineItemsEditor`. Fetches both lists
  * unpaginated (demo-scale data only), the same "aggregate view" trick used
  * by Wastage's summary toggle (Part 11).
+ *
+ * `projectId`, when passed, scopes the GRN list to that project (via
+ * `GRNAdapter.list`'s own `projectId` filter) before pairing with line
+ * items — fixing a cross-project data-integrity gap: previously this
+ * picker showed every GRN line in the system regardless of which project
+ * the MRC being created/edited was for, so a received line from Project A
+ * could end up certified on an MRC for Project B with no warning. Pass
+ * `undefined` (an MRC with no project chosen yet) to see every line, same
+ * as before.
  */
-export function useGRNLinesForPicker() {
+export function useGRNLinesForPicker(projectId?: string) {
   const [status, setStatus] = useState<Status>("idle");
   const [options, setOptions] = useState<GRNLinePickerOption[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     setStatus("loading");
-    Promise.all([grnAdapter.list({ pageSize: 1000 }), grnAdapter.listAllLineItems()])
+    Promise.all([grnAdapter.list({ pageSize: 1000, projectId }), grnAdapter.listAllLineItems()])
       .then(([grnResult, lines]) => {
         if (cancelled) return;
         const grnsById = new Map(grnResult.items.map((g) => [g.id, g]));
@@ -181,7 +190,7 @@ export function useGRNLinesForPicker() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [projectId]);
 
   return { status, options };
 }

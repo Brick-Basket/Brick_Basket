@@ -1,22 +1,29 @@
 /**
- * Customer — minimal shape, the same kind of thin slice `Project` got in
- * Part 3.
+ * Customer — extended in the Customer Module pass (this pass) from the
+ * minimal shape it had since Part 5 (name/email/phone/leadId only, just
+ * enough for a Contract-form picker).
  *
- * Purpose: gives Contract Management (Part 5) something real to link a
- * `Contract` to once a `Lead` converts, per the owner's "Lead → Customer"
- * relationship. Every later customer-facing module (Documents, MRC,
- * Finance/Payments) extends this file with the fields it needs rather than
- * duplicating a parallel type — not tied to one owning part in
- * `docs/MODULES.md` for that reason (same rationale as `project.ts`).
+ * Owner's scope for the Customer Module (relayed via WhatsApp, see
+ * docs/CHANGELOG.md): "Payments", "Progress percentage", "Progress
+ * photographs". Of those three, two are already fully modeled elsewhere —
+ * Payments via `Payment`/`paymentAdapter` (filter by `customerId`), and
+ * Progress photographs via `SiteUpdate`/`siteUpdatesAdapter` (filter by the
+ * customer's `projectId`s, `visibleToCustomer: true`) — this file and
+ * `project.ts` only needed to grow the third: Progress percentage, plus a
+ * proper CRUD surface for the Customer entity itself, since the new admin
+ * screens need to create/edit a Customer record directly (see
+ * docs/OPEN_QUESTIONS.md for the "can a Customer be created standalone,
+ * before any Contract/Lead exists" flag — this pass adds the capability;
+ * the owner hasn't confirmed whether it should be reachable from the UI
+ * without one).
+ *
+ * `address`/`alternatePhone`/`notes` are plain FRONTEND IMPLEMENTATION
+ * DECISIONS — reasonable profile fields for a customer-detail screen, not
+ * anything the owner specified. Flagged in docs/OPEN_QUESTIONS.md rather
+ * than silently invented as a permanent contract.
  *
  * Relationships: `leadId` → the originating `Lead` (optional — a customer
  * can be logged directly, without ever existing as a `Lead` record).
- * One demo customer (`id: "u_customer"`) deliberately shares its id with
- * its matching login persona (`src/lib/auth/mock-users.ts`) so the
- * customer portal (`/dashboard/contracts`) can scope "my contracts" the
- * same way `ProjectProvider` already scopes "my projects" — see
- * `docs/OPEN_QUESTIONS.md`. A real backend owns the actual
- * Customer↔User account relationship.
  *
  * Backend ownership: persistence and the authoritative field set are
  * backend-owned once a real Customer/CRM module exists.
@@ -26,6 +33,19 @@ export interface Customer {
   name: string;
   email: string;
   phone: string;
+  /** FRONTEND IMPLEMENTATION DECISION (Customer Module pass) — not owner-specified. */
+  alternatePhone?: string;
+  /** FRONTEND IMPLEMENTATION DECISION (Customer Module pass) — not owner-specified. */
+  address?: string;
+  /** FRONTEND IMPLEMENTATION DECISION (Customer Module pass) — internal staff note, never shown in the customer portal. */
+  notes?: string;
   leadId?: string;
   createdAt: string;
+  updatedAt: string;
 }
+
+/** Shape for `CustomersAdapter.create` — mirrors the `Create*Input` pattern used by Vendor/Contract/etc. */
+export type CreateCustomerInput = Omit<Customer, "id" | "createdAt" | "updatedAt">;
+
+/** Shape for `CustomersAdapter.update` — every field editable except id/createdAt (updatedAt is adapter-managed). */
+export type UpdateCustomerInput = Partial<Omit<Customer, "id" | "createdAt" | "updatedAt">>;

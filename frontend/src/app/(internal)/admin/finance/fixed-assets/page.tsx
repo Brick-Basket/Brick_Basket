@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { usePermission } from "@/lib/permissions/use-permission";
 import { useFixedAssets } from "@/hooks/use-fixed-assets";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { FixedAssetFilters } from "@/components/finance/fixed-asset-filters";
 import { FixedAssetTable } from "@/components/finance/fixed-asset-table";
 import { FixedAssetForm } from "@/components/finance/fixed-asset-form";
@@ -48,6 +49,22 @@ function AdminFixedAssetsContent() {
   const [editingAsset, setEditingAsset] = useState<FixedAsset | null>(null);
   const { status, error, result, refetch } = useFixedAssets(filters);
 
+  // BrickBasket "everything interconnected" connectivity fix: this filter
+  // already had a Project dropdown, but it never followed the shared Global
+  // Project Selector — same follow pattern as `GRNFilters`/Documents.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: FixedAssetListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
+
   const handleSortChange = (key: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -78,7 +95,7 @@ function AdminFixedAssetsContent() {
         </PermissionGuard>
       </div>
 
-      <FixedAssetFilters value={filters} onChange={setFilters} />
+      <FixedAssetFilters value={filters} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">

@@ -179,18 +179,25 @@ A vendor may be assessed more than once — never overwritten, always a new entr
 
 **Frontend implementation decision:** this entity's shape is invented — the owner requirements ask for a "past work section" without defining its fields. See `docs/OPEN_QUESTIONS.md` #28.
 
-## Customer — implemented (Part 5, minimal slice)
+## Customer — implemented (Part 5, minimal slice; extended to full CRUD in the Customer Module pass)
 
-`src/types/domain/customer.ts` · adapter: `src/lib/api/adapters/customers-adapter.ts` (`CustomersAdapter`, mock-backed) · mock data: `src/data/mock/customers.ts` (3 records).
+`src/types/domain/customer.ts` · adapter: `src/lib/api/adapters/customers-adapter.ts` (`CustomersAdapter`, mock-backed, now `list`/`get`/`create`/`update`) · hooks: `src/hooks/use-customers.ts` (`useCustomers`, `useCustomer`, `useCreateCustomer`, `useUpdateCustomer`) · mock data: `src/data/mock/customers.ts` (5 records) · routes: `/admin/customers` (see `docs/ROUTES.md`).
+
+Owner's scope for this module, relayed via WhatsApp (see `docs/CHANGELOG.md`): "Payments", "Progress percentage", "Progress photographs." Payments and Progress photographs were already modeled elsewhere (`Payment`/`paymentAdapter`, filtered by `customerId`; `SiteUpdate`/`siteUpdatesAdapter`, filtered by the customer's project(s) + `visibleToCustomer: true`) — this pass's real new work was Progress percentage (see the new `Project`/`ProjectProgressLogEntry` sections below) plus promoting `Customer` itself from a Part-5 picker-only shape to a full CRUD entity with its own admin screens.
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `id` | `string` | yes | one demo customer (`"u_customer"`) intentionally shares its id with its login persona — see the type's header comment |
 | `name` / `email` / `phone` | `string` | yes | |
-| `leadId` | `string` | no | → the originating `Lead`, when this customer converted from one |
-| `createdAt` | ISO `string` | yes | |
+| `alternatePhone` | `string` | no | **FRONTEND IMPLEMENTATION DECISION (Customer Module pass)** — not owner-specified, see `docs/OPEN_QUESTIONS.md` #79 |
+| `address` | `string` | no | **FRONTEND IMPLEMENTATION DECISION (Customer Module pass)** — not owner-specified, see `docs/OPEN_QUESTIONS.md` #79 |
+| `notes` | `string` | no | **FRONTEND IMPLEMENTATION DECISION (Customer Module pass)** — internal staff note, never shown in the customer portal, see `docs/OPEN_QUESTIONS.md` #79 |
+| `leadId` | `string` | no | → the originating `Lead`, when this customer converted from one; immutable after creation — `CustomerForm` has no field for it, so a directly-created customer can never retroactively be linked to a Lead |
+| `createdAt` / `updatedAt` | ISO `string` | yes | |
 
-Same thin-slice treatment `Project` got in Part 3 — extended by whichever later part needs more (Documents, MRC, Finance/Payments), not redefined.
+`CreateCustomerInput` = every field above except `id`/`createdAt`/`updatedAt`; `UpdateCustomerInput` = the same set, all optional. `CustomersAdapter.list()` takes **no parameters at all** — filtering/sorting/pagination for `/admin/customers` happens entirely client-side over the full fetched array, unlike `VendorsAdapter.list`'s server-shaped params; flagged as a scalability follow-up, see `docs/OPEN_QUESTIONS.md` #80.
+
+Whether a `Customer` can be created standalone, with no originating `Lead`/`Contract` at all, is a frontend capability added this pass, not an owner-confirmed workflow — see `docs/OPEN_QUESTIONS.md` #79.
 
 ## Contract / ContractLineItem — implemented (Part 5)
 
@@ -967,3 +974,41 @@ Frontend files: `src/types/domain/site-update.ts`, `src/lib/api/adapters/site-up
 **Media is immutable after creation** — there is no "add more photos to an existing update" or "delete one photo" action. Posting a new update for a later date is the intended flow instead, which also keeps each update's date/remarks honestly tied to one visit rather than an ever-growing bucket. Same "no file on record" mock convention as Document Management: a media item uploaded during the current browser session has an in-memory object URL (`SiteUpdatesAdapter.getPreviewUrl(mediaId)`); every seeded demo record and anything after a reload shows an explicit empty state instead of a broken preview. See `docs/FILE_UPLOADS.md`.
 
 Not owner-confirmed, tracked in `docs/OPEN_QUESTIONS.md`: file size/type limits (same open question as Document Management's #8); whether `relatedWorkItem` should become a real FK into Schedule/DPR once those modules' own IDs are stable; whether staff should be able to delete an individual update (there's no delete action anywhere in this module today, staff- or admin-side).
+
+## Project — implemented (minimal shape since Part 3; `progressPercentage` added in the Customer Module pass)
+
+`src/types/domain/project.ts` · adapter: `src/lib/api/adapters/projects-adapter.ts` (`ProjectsAdapter` — added in the post-Part-20 stabilization pass, Phase 10, to close a Component→hook→adapter boundary gap; extended with `update`/`listProgressLog` in the Customer Module pass) · hooks: `src/hooks/use-projects.ts` (`useProjects`, `useProject`, `useUpdateProjectProgress`, `useProjectProgressLog`).
+
+`Project` has never had its own entry in this file before now — by design, per its own header comment, it is "intentionally a thin slice... each later module will extend this file with the fields it needs rather than duplicating a parallel type," and no single part ever owned it end to end. 69+ call sites across the app still import `mockProjects` directly rather than going through this adapter — tracked as a separate, pre-existing migration gap, `docs/OPEN_QUESTIONS.md` #44.
+
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `id` / `name` / `location` | `string` | yes | |
+| `customerId` | `string` | no | distinguishes "my projects" for a customer session in the portal shell |
+| `progressPercentage` | `number` (0–100) | no | **added in the Customer Module pass** — a snapshot, not computed on every read; refreshed only when `ProjectsAdapter.update` is called (staff typing a value directly, or accepting the Schedule-computed suggestion below) |
+
+**`UpdateProjectInput`** — intentionally narrow: `progressPercentage` is the *only* editable field through this app today. Shape: `{ progressPercentage?, source?: "manual" | "schedule_computed", reason?: string }`. `source` defaults to `"manual"` when omitted (true of every call site that existed before this pass). `reason` is free text, required by the UI layer (not the adapter) when `manualProgressNeedsReason()` says so — see below.
+
+**Robust progress mapping** — a follow-up on top of the initial Customer Module build. The field's type didn't change, but it's no longer a bare manually-typed number:
+
+- `src/lib/utils/project-progress.ts`'s `computeScheduleBasedProgress()` derives a *suggested* percentage from the project's own `ScheduleActivity`/`ScheduleProgressEntry` data (Part 13), duration-weighted (weight = planned duration in days per activity, minimum 1) — returns `null` for a project with zero Schedule activities, in which case the UI falls back to pure manual entry. **Deliberately duration-weighted, not cost-weighted** — there is no confirmed BOQ-to-Schedule-activity cost link anywhere in the app to weight by cost instead; a cost-weighted ("earned value") version is flagged as a Tier 2 upgrade, not built here — see `docs/OPEN_QUESTIONS.md` #82.
+- `manualProgressNeedsReason(next, current, computedSuggestion)` returns true — requiring a reason, enforced at the UI layer only — when a manual edit moves the percentage backwards, or diverges from a non-null computed suggestion by more than `PROGRESS_OVERRIDE_REASON_THRESHOLD` (10 points).
+- The computed suggestion never silently overwrites the stored value — it's always surfaced alongside it, with a "Use this value" action if staff want to accept it.
+
+See `src/components/customers/customer-project-progress.tsx` (the staff-editable widget on the Customer detail page, gated by `customers:write`) and `src/components/projects/project-progress-summary.tsx` (the read-only customer-portal widget on `/dashboard/projects` — see `docs/OPEN_QUESTIONS.md` #81 for why it exists).
+
+## ProjectProgressLogEntry — implemented (robust progress mapping follow-up)
+
+`src/types/domain/project-progress-log.ts` · same adapter as `Project` (`ProjectsAdapter.listProgressLog`, read-only — entries are written internally by `ProjectsAdapter.update`, never directly) · held in-memory on `MockProjectsAdapter`, not a separate mock-data file.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` / `projectId` | `string` | |
+| `previousPercentage` | `number \| null` | `null` for a project's very first entry |
+| `newPercentage` | `number` | |
+| `source` | `"manual" \| "schedule_computed"` (`ProjectProgressSource`) | |
+| `reason` | `string?` | present when the UI required one (see `manualProgressNeedsReason` above), otherwise omitted |
+| `changedBy` / `changedByName` | `string` | |
+| `changedAt` | ISO `string` | |
+
+An entry is only appended when `progressPercentage` actually changes value — a no-op `update` call writes nothing. **No backend endpoint exists for this log yet** — a real backend should persist it server-side as part of `PATCH /api/projects/:id`'s own transaction, not as a separate client-maintained log; see `docs/API_CONTRACTS.md`.

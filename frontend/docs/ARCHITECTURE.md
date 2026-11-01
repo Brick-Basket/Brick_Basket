@@ -124,7 +124,7 @@ The full `/docs` tree required by the master prompt was created up front as a sk
 
 See `docs/OPEN_QUESTIONS.md` for the full, living list. Headline items carried over unchanged from the reconciliation report:
 
-1. Vendor Series 6 (Design/Detailing/Consultancy) is written by the owner as "60001+" while every other series is six digits (100001+ … 500001+). Preserved verbatim; flagged, not silently corrected to 600001+.
+1. ~~Vendor Series 6 (Design/Detailing/Consultancy) is written by the owner as "60001+" while every other series is six digits (100001+ … 500001+). Preserved verbatim; flagged, not silently corrected to 600001+.~~ **Resolved** — owner confirmed Series 6 should be six digits like the rest; now 600001+. See `docs/OPEN_QUESTIONS.md` #1.
 2. Full role → permission matrix is not finalized.
 3. Workflow/status vocabulary beyond "two-level PO approval" (e.g. lead pipeline stages, requisition states) is not finalized — frontend uses clearly-labeled configurable/demo values.
 4. Cost Management module business rules are explicitly pending a separate Excel specification from Pushkar Tiwari — built as an integration-ready placeholder only.

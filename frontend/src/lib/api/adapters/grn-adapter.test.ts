@@ -66,4 +66,56 @@ describe("grnAdapter — receipt constraints", () => {
       ),
     ).rejects.toThrow();
   });
+
+  // Over-receipt guard — docs/OPEN_QUESTIONS.md #32b, closed by the
+  // BrickBasket business-requirements audit pass (see docs/CHANGELOG.md).
+  // The fixture's default requisition/PO line quantity is 500 (see
+  // `createApprovedRequisition` in `test-fixtures.ts`).
+  it("allows split deliveries that together stay within the ordered quantity, but refuses once a receipt would exceed it", async () => {
+    const po = await createIssuedPurchaseOrder({ vendorId: "vendor_9", rate: 50 });
+    const [poLine] = await purchaseOrdersAdapter.listLineItems(po.id);
+    if (!poLine) throw new Error("Expected the issued PO to have at least one line item.");
+
+    // First partial delivery: 300 of the 500 ordered — well within bounds.
+    await grnAdapter.create(
+      { purchaseOrderId: po.id, receivedAt: "2026-09-01", lines: [{ purchaseOrderLineItemId: poLine.id, receivedQuantity: 300 }] },
+      TEST_ACTOR,
+    );
+
+    // Second delivery of 200 brings the running total to exactly 500 — still allowed.
+    await grnAdapter.create(
+      { purchaseOrderId: po.id, receivedAt: "2026-09-05", lines: [{ purchaseOrderLineItemId: poLine.id, receivedQuantity: 200 }] },
+      TEST_ACTOR,
+    );
+
+    // A third delivery of even 1 more unit now exceeds the 500 ordered — refused.
+    await expect(
+      grnAdapter.create(
+        { purchaseOrderId: po.id, receivedAt: "2026-09-10", lines: [{ purchaseOrderLineItemId: poLine.id, receivedQuantity: 1 }] },
+        TEST_ACTOR,
+      ),
+    ).rejects.toThrow(/more than the 500 ordered/);
+  });
+
+  it("lets an existing GRN's own received quantity be edited without double-counting it against itself", async () => {
+    const po = await createIssuedPurchaseOrder({ vendorId: "vendor_10", rate: 70 });
+    const [poLine] = await purchaseOrdersAdapter.listLineItems(po.id);
+    if (!poLine) throw new Error("Expected the issued PO to have at least one line item.");
+
+    const grn = await grnAdapter.create(
+      { purchaseOrderId: po.id, receivedAt: "2026-09-01", lines: [{ purchaseOrderLineItemId: poLine.id, receivedQuantity: 300 }] },
+      TEST_ACTOR,
+    );
+
+    // Revising this same GRN's line up to the full 500 ordered should be
+    // allowed — it must not be added on top of its own prior 300.
+    await expect(
+      grnAdapter.update(grn.id, { lines: [{ purchaseOrderLineItemId: poLine.id, receivedQuantity: 500 }] }, TEST_ACTOR),
+    ).resolves.not.toThrow();
+
+    // But revising it past the ordered quantity is still refused.
+    await expect(
+      grnAdapter.update(grn.id, { lines: [{ purchaseOrderLineItemId: poLine.id, receivedQuantity: 501 }] }, TEST_ACTOR),
+    ).rejects.toThrow(/more than the 500 ordered/);
+  });
 });

@@ -6,6 +6,7 @@ import { FileBarChart, FileCheck2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { ErrorState } from "@/components/domain/error-state";
@@ -18,6 +19,8 @@ import { formatDate, formatDateTime } from "@/lib/utils/format";
 import { useProjects } from "@/hooks/use-projects";
 import { useVendors } from "@/hooks/use-vendors";
 import { ADMIN_ROUTES } from "@/lib/constants/routes";
+import { STOCK_MATERIAL_CONFIG, STOCK_MATERIAL_ORDER } from "@/components/stock/stock-material-config";
+import type { StockMaterial } from "@/types/domain/stock-entry";
 
 interface LineEdit {
   purchaseOrderLineItemId: string;
@@ -27,6 +30,18 @@ interface LineEdit {
   receivedQuantity: string;
   brand: string;
   warrantyCertificateNumber: string;
+  /**
+   * BrickBasket connectivity fix: this field didn't exist here before, so
+   * `saveEdit` always sent `stockMaterial: undefined` for every line —
+   * silently erasing whatever tag `GRNCreateForm` had set the moment
+   * anyone used this "Edit" action, even without touching this field
+   * (`GRNAdapter.update` applies the patch's `stockMaterial` as given, it
+   * doesn't fall back to the existing value). Now seeded from the
+   * existing line in `startEdit` and round-tripped unchanged in
+   * `saveEdit` below, with its own editable Select, matching
+   * `GRNCreateForm`'s pattern — see `docs/CHANGELOG.md` for the full fix.
+   */
+  stockMaterial: StockMaterial | "";
 }
 
 /**
@@ -79,6 +94,7 @@ export function GRNDetail({ grnId, onOpenPurchaseOrder }: { grnId: string; onOpe
         receivedQuantity: String(l.receivedQuantity),
         brand: l.brand ?? "",
         warrantyCertificateNumber: l.warrantyCertificateNumber ?? "",
+        stockMaterial: l.stockMaterial ?? "",
       })),
     );
     setEditing(true);
@@ -95,6 +111,7 @@ export function GRNDetail({ grnId, onOpenPurchaseOrder }: { grnId: string; onOpe
       receivedQuantity: Number(l.receivedQuantity),
       brand: l.brand || undefined,
       warrantyCertificateNumber: l.warrantyCertificateNumber || undefined,
+      stockMaterial: l.stockMaterial || undefined,
     }));
     if (parsedLines.some((l) => Number.isNaN(l.receivedQuantity) || l.receivedQuantity < 0)) return;
     const result = await updateGRN(
@@ -217,6 +234,22 @@ export function GRNDetail({ grnId, onOpenPurchaseOrder }: { grnId: string; onOpe
                       onChange={(e) => updateLineEdit(line.purchaseOrderLineItemId, { warrantyCertificateNumber: e.target.value })}
                     />
                   </div>
+                </div>
+                <div className="mt-3">
+                  <Label htmlFor={`grn-edit-stock-material-${line.purchaseOrderLineItemId}`}>Stock Material (optional)</Label>
+                  <Select
+                    id={`grn-edit-stock-material-${line.purchaseOrderLineItemId}`}
+                    className="mt-1.5"
+                    value={line.stockMaterial}
+                    onChange={(e) => updateLineEdit(line.purchaseOrderLineItemId, { stockMaterial: e.target.value as StockMaterial | "" })}
+                  >
+                    <option value="">Not tagged — won&apos;t appear on the Stock Statement&apos;s reconciliation view</option>
+                    {STOCK_MATERIAL_ORDER.map((m) => (
+                      <option key={m} value={m}>
+                        {STOCK_MATERIAL_CONFIG[m].label}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
               </div>
             ))}

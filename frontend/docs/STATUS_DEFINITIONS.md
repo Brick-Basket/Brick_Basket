@@ -108,9 +108,9 @@ The two warranty categories are the only ones that populate `Document.warrantyIt
 | `supply` | 3 | Supply | 300001 | "300001+" |
 | `specialised_work` | 4 | Specialised Work | 400001 | "400001+" |
 | `machinery_hiring` | 5 | Machinery Hiring | 500001 | "500001+" |
-| `design_detailing_consultancy` | 6 | Design / Detailing / Consultancy | 600001 | "60001+" (verbatim — see `docs/OPEN_QUESTIONS.md` #1) |
+| `design_detailing_consultancy` | 6 | Design / Detailing / Consultancy | 600001 | "600001+" |
 
-Series 6's owner text ("60001+") is five digits while every other series is six — this build uses 600001 as the starting number for a working, internally consistent demo, while preserving the owner's exact text in `VENDOR_CODE_SERIES_CONFIG[...].ownerExampleText`. Do not silently resolve this — confirm with the client per `docs/OPEN_QUESTIONS.md` #1.
+Series 6's owner text originally read "60001+" — five digits, while every other series is six. `docs/OPEN_QUESTIONS.md` #1 was first resolved in favor of that literal five-digit text, then corrected by the owner directly in the running app to six digits (600001+), matching every other series. `VENDOR_CODE_SERIES_CONFIG[...].ownerExampleText` now reflects "600001+" as well.
 
 ## Vendor.gstCategory (Part 7)
 

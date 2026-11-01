@@ -101,4 +101,32 @@ export const mockVendorAssessments: VendorAssessment[] = [
     assessedByName: "Aditi Sharma",
     assessedAt: "2026-07-28T06:00:00.000Z",
   },
+  {
+    // vendor_9 added alongside the Riverside Apartments mock project.
+    // vendor_10 deliberately has none — its only PO (po_7) was rejected,
+    // exercising the "not yet assessed" empty state same as vendor_5/vendor_8.
+    id: "vassess_9",
+    vendorId: "vendor_9",
+    quality: 8,
+    timelineAdherence: 9,
+    futureBusinessProbability: 8,
+    presentCapacity: 8,
+    notes: "Delivered the full TMT steel order in a single truck, ahead of the promised window.",
+    assessedBy: "u_engineer",
+    assessedByName: "Sana Iqbal",
+    assessedAt: "2026-09-04T06:00:00.000Z",
+  },
+  {
+    // vendor_11 added alongside the Gorakhpur Business Park mock project.
+    id: "vassess_10",
+    vendorId: "vendor_11",
+    quality: 8,
+    timelineAdherence: 8,
+    futureBusinessProbability: 8,
+    presentCapacity: 7,
+    notes: "First order handled smoothly; slight delay confirming the final truck schedule.",
+    assessedBy: "u_pm",
+    assessedByName: "Karan Mehta",
+    assessedAt: "2026-09-26T06:00:00.000Z",
+  },
 ];

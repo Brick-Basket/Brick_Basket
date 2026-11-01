@@ -21,7 +21,10 @@ import { useCustomers } from "@/hooks/use-customers";
  * their own profile — inventing an edit UI with nowhere real to send the
  * result would be worse than no edit UI at all. Add one the moment a real
  * "update my profile" contract is confirmed and implemented server-side.
- * See docs/OPEN_QUESTIONS.md #46.
+ * See docs/OPEN_QUESTIONS.md #89 (previously cited as #46 here — that
+ * number was overwritten by an unrelated later pass during a codebase
+ * merge, same citation-drift pattern #85 already documents; #89 is the
+ * correction and the one to cite going forward).
  */
 export default function Page() {
   const { session } = useSession();

@@ -29,4 +29,26 @@ export const mockRequisitionAudit: RequisitionAuditEntry[] = [
   { id: "raud_12", requisitionId: "req_6", action: "created", message: "Requisition created.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-06-30T05:00:00.000Z" },
   { id: "raud_13", requisitionId: "req_6", action: "submitted", message: "Submitted for review.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-07-01T06:00:00.000Z" },
   { id: "raud_14", requisitionId: "req_6", action: "approved", message: "Approved by Vikram Nair.", actorId: "u_purchaser", actorName: "Vikram Nair", createdAt: "2026-07-02T07:00:00.000Z" },
+
+  // req_8–11 — Riverside Apartments/Heritage Resort (see mock/requisitions.ts)
+  { id: "raud_15", requisitionId: "req_8", action: "created", message: "Requisition created.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-08-17T05:00:00.000Z" },
+  { id: "raud_16", requisitionId: "req_8", action: "submitted", message: "Submitted for review.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-08-18T06:00:00.000Z" },
+  { id: "raud_17", requisitionId: "req_8", action: "approved", message: "Approved by Vikram Nair.", actorId: "u_purchaser", actorName: "Vikram Nair", createdAt: "2026-08-19T08:00:00.000Z" },
+
+  { id: "raud_18", requisitionId: "req_9", action: "created", message: "Requisition created.", actorId: "u_admin", actorName: "Aditi Sharma", createdAt: "2026-09-11T05:00:00.000Z" },
+  { id: "raud_19", requisitionId: "req_9", action: "submitted", message: "Submitted for review.", actorId: "u_admin", actorName: "Aditi Sharma", createdAt: "2026-09-12T06:00:00.000Z" },
+
+  { id: "raud_20", requisitionId: "req_10", action: "created", message: "Requisition created.", actorId: "u_admin", actorName: "Aditi Sharma", createdAt: "2026-07-27T05:00:00.000Z" },
+  { id: "raud_21", requisitionId: "req_10", action: "submitted", message: "Submitted for review.", actorId: "u_admin", actorName: "Aditi Sharma", createdAt: "2026-07-28T06:00:00.000Z" },
+  { id: "raud_22", requisitionId: "req_10", action: "approved", message: "Approved by Vikram Nair.", actorId: "u_purchaser", actorName: "Vikram Nair", createdAt: "2026-07-29T08:00:00.000Z" },
+
+  { id: "raud_23", requisitionId: "req_11", action: "created", message: "Requisition created.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-09-14T06:00:00.000Z" },
+
+  // req_12/req_13 — Gorakhpur Business Park (see mock/requisitions.ts)
+  { id: "raud_24", requisitionId: "req_12", action: "created", message: "Requisition created.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-09-15T05:00:00.000Z" },
+  { id: "raud_25", requisitionId: "req_12", action: "submitted", message: "Submitted for review.", actorId: "u_pm", actorName: "Karan Mehta", createdAt: "2026-09-16T06:00:00.000Z" },
+  { id: "raud_26", requisitionId: "req_12", action: "approved", message: "Approved by Vikram Nair.", actorId: "u_purchaser", actorName: "Vikram Nair", createdAt: "2026-09-17T08:00:00.000Z" },
+
+  { id: "raud_27", requisitionId: "req_13", action: "created", message: "Requisition created.", actorId: "u_admin", actorName: "Aditi Sharma", createdAt: "2026-09-20T05:00:00.000Z" },
+  { id: "raud_28", requisitionId: "req_13", action: "submitted", message: "Submitted for review.", actorId: "u_admin", actorName: "Aditi Sharma", createdAt: "2026-09-21T06:00:00.000Z" },
 ];

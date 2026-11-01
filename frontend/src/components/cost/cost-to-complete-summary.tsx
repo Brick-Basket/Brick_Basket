@@ -40,6 +40,9 @@ export function CostToCompleteSummary({ summary }: { summary: CostToCompleteSumm
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Actual Cost to Date</p>
           <p className="mt-1 font-heading text-xl font-semibold text-ink">{formatINR(summary.totalCompletedToDate)}</p>
+          {summary.totalPaidToDate !== summary.totalCompletedToDate && (
+            <p className="mt-0.5 text-xs text-ink-muted">{formatINR(summary.totalPaidToDate)} actually paid so far</p>
+          )}
         </div>
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-ink-muted">Remaining Estimated Cost</p>
@@ -69,16 +72,27 @@ export function CostToCompleteSummary({ summary }: { summary: CostToCompleteSumm
         </p>
       )}
 
+      {summary.unallocatedCompletedTotal > 0 && (
+        <p className="rounded-card border border-border bg-surface-muted p-3 text-xs text-ink-muted">
+          {formatINR(summary.unallocatedCompletedTotal)} of invoiced value for this project is against a Purchase Order with
+          no traceable Accepted Cost Estimate category (same reason as above) — it is counted in the formula&apos;s totals but not
+          attributed to any category row.
+        </p>
+      )}
+
       <details className="text-xs text-ink-muted">
         <summary className="cursor-pointer font-medium text-ink">How each column below is calculated</summary>
         <ul className="mt-2 flex flex-col gap-1.5 pl-4 [&>li]:list-disc">
           <li>
-            <span className="font-medium text-ink">Original Estimate (A)</span> — this project&apos;s Project Cost Accounting
-            budget for the category (Part 15), itself set from Accepted Cost Estimate rates.
+            <span className="font-medium text-ink">Original Estimate (A)</span> — this project&apos;s Accepted Cost Estimate
+            items, priced at their own rate against the quantity actually requisitioned for the category (Part 8); falls back
+            to the Project Cost Accounting budget (Part 15) for a category with no requisition yet.
           </li>
           <li>
-            <span className="font-medium text-ink">Completed till date (B)</span> — this project&apos;s Project Cost Accounting
-            actual spend for the category (Part 15).
+            <span className="font-medium text-ink">Completed till date (B)</span> — this project&apos;s vendor Invoices (Part
+            16), traced to the category via their source Purchase Order&apos;s own category mix; falls back to the Project Cost
+            Accounting actual spend (Part 15) for a category with no traced invoice yet. The amount actually <em>paid</em> so
+            far (vs. merely invoiced) is shown separately, for transparency — click a row to see both.
           </li>
           <li>
             <span className="font-medium text-ink">Balance to complete (C)</span> — ordered-but-not-yet-completed value

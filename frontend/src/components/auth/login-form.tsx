@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertTriangle } from "lucide-react";
 import { useSession } from "@/components/providers/auth-provider";
@@ -11,6 +14,21 @@ import { Input } from "@/components/ui/input";
 import { FormField } from "@/components/ui/form-field";
 import { Card } from "@/components/ui/card";
 import { PORTAL_ROUTES, ADMIN_ROUTES, PUBLIC_ROUTES } from "@/lib/constants/routes";
+
+// UI FIX (broad audit pass): Login previously used plain `useState` with
+// `required`/`type="email"` attributes on bare `<input>`s while also
+// setting `noValidate` on the `<form>` — so the browser's native validation
+// popup never fired, but there was nothing wired to `FormField`'s `error`
+// prop to replace it either. A blank/invalid submit fell through to the
+// mock `authAdapter`'s generic ~400ms-delayed error banner instead of a
+// clear inline message under the field — inconsistent with every other
+// form in the app, which wires zod + react-hook-form + `FormField error`.
+const loginFormSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Admin",
@@ -41,10 +59,17 @@ export function LoginForm() {
   const next = searchParams.get("next");
   const expired = searchParams.get("reason") === "expired";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [demoSubmitting, setDemoSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginFormSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
   useEffect(() => {
     if (status === "authenticated" && session) {
@@ -53,17 +78,27 @@ export function LoginForm() {
   }, [status, session, next, router]);
 
   async function doLogin(loginEmail: string, loginPassword: string) {
-    setSubmitting(true);
     setError(null);
     try {
       const newSession = await login({ email: loginEmail, password: loginPassword });
       router.replace(next ?? homeForRoles(newSession.user.roles));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
-    } finally {
-      setSubmitting(false);
     }
   }
+
+  const onSubmit = (values: LoginFormValues) => doLogin(values.email, values.password);
+
+  async function doDemoLogin(loginEmail: string, loginPassword: string) {
+    setDemoSubmitting(true);
+    try {
+      await doLogin(loginEmail, loginPassword);
+    } finally {
+      setDemoSubmitting(false);
+    }
+  }
+
+  const submitting = isSubmitting || demoSubmitting;
 
   if (status === "loading" || status === "authenticated") {
     return (
@@ -86,32 +121,17 @@ export function LoginForm() {
           </div>
         )}
 
-        <form
-          className="mt-6 flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            doLogin(email, password);
-          }}
-          noValidate
-        >
-          <FormField label="Email" htmlFor="login-email" required>
-            <Input
-              id="login-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+        <form className="mt-6 flex flex-col gap-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <FormField label="Email" htmlFor="login-email" required error={errors.email?.message}>
+            <Input id="login-email" type="email" autoComplete="email" invalid={!!errors.email} {...register("email")} />
           </FormField>
-          <FormField label="Password" htmlFor="login-password" required>
+          <FormField label="Password" htmlFor="login-password" required error={errors.password?.message}>
             <Input
               id="login-password"
               type="password"
               autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              invalid={!!errors.password}
+              {...register("password")}
             />
           </FormField>
 
@@ -149,7 +169,7 @@ export function LoginForm() {
               key={user.email}
               type="button"
               disabled={submitting}
-              onClick={() => doLogin(user.email, "demo")}
+              onClick={() => doDemoLogin(user.email, "demo")}
               className="rounded-md border border-border bg-surface p-3 text-left text-sm hover:border-brand-red hover:bg-brand-red/5 disabled:opacity-50"
             >
               <span className="block font-medium text-ink">{user.name}</span>

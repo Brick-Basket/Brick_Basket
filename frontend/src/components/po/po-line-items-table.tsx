@@ -18,9 +18,9 @@ export function POLineItemsTable({ lineItems, taxPercent }: { lineItems: Purchas
       render: (l) => <span className="font-medium text-ink">{l.description}</span>,
     },
     { key: "uom", header: "UOM", hideOnMobile: true, render: (l) => l.uom },
-    { key: "quantity", header: "Qty", render: (l) => l.quantity.toLocaleString("en-IN") },
-    { key: "rate", header: "Rate", render: (l) => formatINR(l.rate) },
-    { key: "amount", header: "Amount", render: (l) => formatINR(l.rate * l.quantity) },
+    { key: "quantity", header: "Qty", align: "right", render: (l) => l.quantity.toLocaleString("en-IN") },
+    { key: "rate", header: "Rate", align: "right", render: (l) => formatINR(l.rate) },
+    { key: "amount", header: "Amount", align: "right", render: (l) => formatINR(l.rate * l.quantity) },
   ];
 
   const subtotal = lineItems.reduce((sum, l) => sum + l.rate * l.quantity, 0);

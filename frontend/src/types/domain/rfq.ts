@@ -87,11 +87,36 @@ export interface RFQLine {
  * `RFQAdapter.setVendorQuote`); amount is always computed at render time
  * (`rate × RFQLine.quantity`), never stored, per the field typing
  * conventions in `docs/DATA_MODELS.md`.
+ *
+ * `attachment*` fields — Document 2 correction: "option to attach the
+ * offers/quotations from respective vendors." Metadata-only, same
+ * "no real backend file storage yet" treatment as `Document`/
+ * `SiteUpdateMedia`/`VendorDocument` — the uploaded file's bytes are kept
+ * only as an in-memory object URL for this session
+ * (`RFQAdapter.getQuotePreviewUrl`). Attaching a file is optional.
  */
 export interface RFQVendorQuote {
   id: string;
   rfqLineId: string;
   vendorId: string;
   rate: number;
+  /**
+   * Landed-cost components — **FRONTEND IMPLEMENTATION DECISION, not
+   * owner-specified**, see `docs/OPEN_QUESTIONS.md` #87(a). The owner's
+   * §5C comparison table only asks for "Vendor N: rate + amount," with no
+   * per-vendor freight/loading/other-charges breakdown of its own — these
+   * three fields extend that additively. All optional and `undefined`
+   * (treated as 0) on every pre-existing mock quote, so a quote that never
+   * sets them behaves exactly as before this change: its "landed cost" is
+   * simply its tax-inclusive rate × quantity, identical to what this app
+   * already computed. `computeLandedCost` (`rfq-comparison.ts`) is what
+   * actually combines these with `rate` and the RFQ's `taxPercent`.
+   */
+  freight?: number;
+  loadingCharges?: number;
+  otherCharges?: number;
   quotedAt: string;
+  attachmentFileName?: string;
+  attachmentFileType?: string;
+  attachmentFileSizeBytes?: number;
 }

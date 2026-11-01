@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { Pagination } from "@/components/domain/pagination";
 import { PermissionGuard } from "@/components/shell/permission-guard";
 import { usePermission } from "@/lib/permissions/use-permission";
 import { useTaxRecords } from "@/hooks/use-tax-records";
+import { useProjectContext } from "@/components/providers/project-provider";
 import { TaxRecordFilters } from "@/components/finance/tax-record-filters";
 import { TaxRecordTable } from "@/components/finance/tax-record-table";
 import { TaxRecordForm } from "@/components/finance/tax-record-form";
@@ -48,6 +49,22 @@ function AdminTaxesContent() {
   const [showForm, setShowForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<TaxRecord | null>(null);
   const { status, error, result, refetch } = useTaxRecords(filters);
+
+  // BrickBasket "everything interconnected" connectivity fix: this filter
+  // already had a Project dropdown, but it never followed the shared Global
+  // Project Selector — same follow pattern as `GRNFilters`/Documents.
+  const { selected } = useProjectContext();
+  const userOverrodeProjectRef = useRef(false);
+  useEffect(() => {
+    if (userOverrodeProjectRef.current) return;
+    if (selected) {
+      setFilters((prev) => (prev.projectId === selected.id ? prev : { ...prev, projectId: selected.id }));
+    }
+  }, [selected]);
+  const handleFiltersChange = (next: TaxRecordListParams) => {
+    if (next.projectId !== filters.projectId) userOverrodeProjectRef.current = true;
+    setFilters(next);
+  };
 
   const handleSortChange = (key: string) => {
     setFilters((prev) => ({
@@ -94,7 +111,7 @@ function AdminTaxesContent() {
         </div>
       )}
 
-      <TaxRecordFilters value={filters} onChange={setFilters} />
+      <TaxRecordFilters value={filters} onChange={handleFiltersChange} />
 
       {status === "loading" && (
         <div className="flex flex-col gap-3">
