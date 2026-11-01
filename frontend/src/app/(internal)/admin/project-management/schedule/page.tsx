@@ -136,7 +136,7 @@ function AdminScheduleContent() {
         <EmptyState title="No activities yet" description="Add the first activity for this project to start tracking its schedule." />
       )}
 
-      {hasProject && status === "success" && result && result.items.length > 0 && (
+      {hasProject && filters.projectId && status === "success" && result && result.items.length > 0 && (
         <>
           <ScheduleOverallProgress projectId={filters.projectId} />
           <ScheduleGanttChart activities={result.items} progressByActivity={progressByActivity} />
