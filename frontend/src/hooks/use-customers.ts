@@ -14,10 +14,12 @@ export function useCustomers() {
   const [status, setStatus] = useState<Status>("idle");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [reloadToken, setReloadToken] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setStatus("loading");
+    setError(null);
     customersAdapter
       .list()
       .then((res) => {
@@ -25,8 +27,10 @@ export function useCustomers() {
         setCustomers(res);
         setStatus("success");
       })
-      .catch(() => {
-        if (!cancelled) setStatus("error");
+      .catch((e) => {
+        if (cancelled) return;
+        setStatus("error");
+        setError(e instanceof Error ? e.message : "Could not load customers. Please try again.");
       });
     return () => {
       cancelled = true;
@@ -35,7 +39,7 @@ export function useCustomers() {
 
   const refetch = useCallback(() => setReloadToken((t) => t + 1), []);
 
-  return { status, customers, refetch };
+  return { status, error, customers, refetch };
 }
 
 /** Single-customer lookup (by id), for the Customer detail page. */
