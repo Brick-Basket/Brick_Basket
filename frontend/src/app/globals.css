@@ -53,24 +53,33 @@
    * looked before — so Baloo 2 (--font-heading-fallback, loaded in
    * layout.tsx) is back to being the actual rendered heading font, not a
    * fallback. See docs/OPEN_QUESTIONS.md #13. Secondary Font "Poppins" is
-   * the confirmed body font and loads for real via next/font/google.
+   * the confirmed body font.
+   *
+   * FRONTEND FIX (self-hosted fonts — see layout.tsx's top-of-file
+   * comment): Poppins/Baloo 2/Hind now load via `next/font/local` instead
+   * of `next/font/google`, because the Google fetch was failing at Vercel
+   * build time. `next/font/local` has no per-file subset/unicode-range
+   * option, so a font that needs Devanagari glyphs now gets its own
+   * separate localFont() call + CSS variable for that script, instead of
+   * one variable covering both scripts internally.
    *
    * FRONTEND FIX (Hindi font fallback — see layout.tsx's comment on
-   * `headingFallback`/`bodyDevanagari`, and docs/CHANGELOG.md): Poppins and
-   * Baloo 2 both used to be Latin-only, so Hindi text fell all the way
-   * through to `system-ui` and rendered in a plain, inconsistent system
-   * font. Baloo 2 (`--font-heading-fallback`) now carries real Devanagari
-   * glyphs itself (its own `subsets` array in layout.tsx just needed
-   * `"devanagari"` added — it was never a different-font problem for
-   * headings), so no extra heading variable is needed here. Poppins has no
-   * Devanagari glyphs at all, so `--font-sans-devanagari` (Hind) is
-   * inserted right after it for body text — CSS's normal per-glyph font
-   * fallback picks it up automatically for Devanagari characters only;
-   * English text is entirely unaffected, still resolving to Poppins/Baloo 2
+   * `headingFallback`/`headingFallbackDevanagari`/`bodyDevanagari`, and
+   * docs/CHANGELOG.md): Poppins and Baloo 2 both used to be Latin-only, so
+   * Hindi text fell all the way through to `system-ui` and rendered in a
+   * plain, inconsistent system font. `--font-heading-fallback-devanagari`
+   * (Baloo 2's own Devanagari glyphs) is inserted right after
+   * `--font-heading-fallback` below so Hindi headings render in the same
+   * Baloo 2 typeface as English ones, just via CSS's ordinary per-glyph
+   * font-family fallback rather than unicode-range splitting within one
+   * family (see layout.tsx). Poppins has no Devanagari glyphs at all, so
+   * `--font-sans-devanagari` (Hind) is inserted right after it for body
+   * text — same mechanism, unchanged from before this pass. English text is
+   * entirely unaffected either way, still resolving to Poppins/Baloo 2
    * exactly as before.
    */
   --font-sans: var(--font-poppins), var(--font-sans-devanagari), system-ui, sans-serif;
-  --font-heading: var(--font-heading-fallback), var(--font-poppins), var(--font-sans-devanagari), system-ui, sans-serif;
+  --font-heading: var(--font-heading-fallback), var(--font-heading-fallback-devanagari), var(--font-poppins), var(--font-sans-devanagari), system-ui, sans-serif;
 }
 
 /*
