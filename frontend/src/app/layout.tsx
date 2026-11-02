@@ -1,13 +1,49 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins, Baloo_2, Hind } from "next/font/google";
+import localFont from "next/font/local";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { ThemeProvider, THEME_INIT_SCRIPT } from "@/components/providers/theme-provider";
 import "./globals.css";
 
+// SELF-HOSTED FONTS — see docs/OPEN_QUESTIONS.md #13/#50 and
+// docs/CHANGELOG.md for the font history this continues. This build
+// previously loaded Poppins/Baloo 2/Hind via `next/font/google`, which
+// fetches font files from Google Fonts *at Vercel build time*. That build-
+// time fetch started failing intermittently on Vercel (TypeError inside
+// `next/font/google`'s loader — `src/app/layout.tsx` flagged by name in the
+// build log — with build logs showing a `fonts.googleapis.com` network
+// error; a redeploy reproduced the identical failure, so it wasn't one-off
+// flakiness). Self-hosting the exact same font files via `next/font/local`
+// removes that build-time network dependency entirely: the files below
+// were fetched once from Google Fonts' own CDN (fonts.gstatic.com — the
+// same bytes `next/font/google` would have fetched) and committed under
+// `src/app/fonts/`, so the production build no longer depends on Vercel's
+// build environment being able to reach Google at all.
+//
+// `next/font/local` has no per-file `unicodeRange`/subset option (unlike
+// `next/font/google`, which auto-splits a family into latin/devanagari/etc
+// woff2 files under one CSS variable). So instead of trying to replicate
+// that splitting, the Devanagari variant of each font that needs one is
+// loaded as its own separate `localFont()` call with its own CSS variable,
+// and that variable is added into the font-family fallback chain in
+// globals.css right after its Latin counterpart. CSS's ordinary per-glyph
+// font-family fallback (already how `--font-sans-devanagari`/Hind worked
+// before this change) then does the same job unicode-range splitting was
+// doing: a Latin character renders in the Latin face, a Devanagari
+// character falls through to the Devanagari face — visually identical
+// output, just composed via two font-family entries instead of one family
+// with multiple unicode-range'd @font-face rules.
+
 // Secondary Font per docs/BRAND_GUIDELINES.md — confirmed body font.
-const poppins = Poppins({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+// Poppins has no Devanagari glyphs in any of its own font files, so (as
+// before this change) it only ever needed the Latin weights — Hind
+// (below) is what covers Devanagari body text.
+const poppins = localFont({
+  src: [
+    { path: "./fonts/Poppins-400-latin.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Poppins-500-latin.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Poppins-600-latin.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Poppins-700-latin.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-poppins",
   display: "swap",
 });
@@ -21,31 +57,41 @@ const poppins = Poppins({
 // (The supplied file is still sitting unused at
 // src/app/fonts/SuperWonder-Regular.ttf if this gets revisited later.)
 //
-// FRONTEND FIX (Hindi font fallback, reported via a live-site screenshot,
-// then corrected after a real `npm run dev` build error — see
-// docs/CHANGELOG.md): this used to be `subsets: ["latin"]` only, so Hindi
-// headings had no matching glyphs here and fell all the way through to the
-// browser's plain system font. The first attempt at a fix added a separate
-// "Baloo Da 2" font for Devanagari, reasoning (wrongly) that it was Baloo
-// 2's Devanagari sibling — the real build immediately proved that wrong:
-// `next/font/google` rejected it with "Unknown subset `devanagari` for font
-// `Baloo Da 2` — Available subsets: bengali, latin, latin-ext, vietnamese".
-// "Da" in that family name is Bengali, not Devanagari. Baloo 2 itself —
-// already loaded right here — is the one that actually carries Devanagari
-// glyphs; it just needed to be asked for. Adding `"devanagari"` below is
-// the entire fix: Hindi headings now render in the exact same Baloo 2 font
-// as English ones, not a lookalike substitute.
-const headingFallback = Baloo_2({
-  subsets: ["latin", "devanagari"],
-  weight: ["600", "700", "800"],
+// Baloo 2 is distributed by Google Fonts as a single variable font file
+// per script (one file whose `wght` axis covers the whole weight range,
+// rather than a separate static file per weight) — confirmed by fetching
+// the family's own css2 response, where the weight-600/700/800 `@font-face`
+// entries for a given subset all pointed at the exact same file. So one
+// variable-font file per subset below covers all three heading weights.
+//
+// `headingFallback` carries the Latin glyphs (the actual rendered heading
+// font for English text). `headingFallbackDevanagari` carries the
+// Devanagari glyphs for Hindi headings — previously the same `Baloo_2`
+// google-font call with `subsets: ["latin", "devanagari"]`; see this
+// file's top-of-file comment for why that's now two separate localFont
+// calls joined via the `--font-heading` fallback chain in globals.css
+// instead of one family with unicode-range splitting.
+const headingFallback = localFont({
+  src: "./fonts/Baloo2-Latin-var.woff2",
+  weight: "600 800",
+  style: "normal",
   variable: "--font-heading-fallback",
+  display: "swap",
+});
+const headingFallbackDevanagari = localFont({
+  src: "./fonts/Baloo2-Devanagari-var.woff2",
+  weight: "600 800",
+  style: "normal",
+  variable: "--font-heading-fallback-devanagari",
   display: "swap",
 });
 
 // Poppins (above) has no Devanagari glyphs at all — unlike Baloo 2, there's
 // no subset to add. `Hind` is this app's Devanagari body-text companion,
 // chosen to visually pair with Poppins' clean, modern sans-serif feel (same
-// weight set: 400/500/600/700). Inserted into `--font-sans` right after
+// weight set: 400/500/600/700). Unlike Baloo 2, Hind ships one static file
+// per weight (not a variable font), so each weight needs its own file here,
+// same as Poppins above. Inserted into `--font-sans` right after
 // `--font-poppins` in globals.css, so CSS's normal per-glyph font fallback
 // picks it up automatically for Devanagari characters only — English body
 // text is unaffected, still resolving to Poppins exactly as before. Unlike
@@ -53,9 +99,13 @@ const headingFallback = Baloo_2({
 // in for Poppins (not a verified sibling), so it's flagged in
 // docs/OPEN_QUESTIONS.md #77 for an owner/brand-team look, same as the
 // rest of the Hindi pass.
-const bodyDevanagari = Hind({
-  subsets: ["devanagari"],
-  weight: ["400", "500", "600", "700"],
+const bodyDevanagari = localFont({
+  src: [
+    { path: "./fonts/Hind-400-devanagari.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/Hind-500-devanagari.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/Hind-600-devanagari.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/Hind-700-devanagari.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-sans-devanagari",
   display: "swap",
 });
@@ -113,7 +163,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       suppressHydrationWarning
-      className={`scroll-smooth ${poppins.variable} ${headingFallback.variable} ${bodyDevanagari.variable}`}
+      className={`scroll-smooth ${poppins.variable} ${headingFallback.variable} ${headingFallbackDevanagari.variable} ${bodyDevanagari.variable}`}
     >
       <head>
         {/* Runs before first paint, outside React/Next's JS bundle (see
